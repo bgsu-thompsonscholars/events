@@ -365,6 +365,58 @@
     border-radius: 2px;
   }
 
+  /* Semester accordion */
+  .sem-accordion {
+    margin: 1.25rem 0 0.5rem;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .sem-accordion:first-child { margin-top: 0; }
+
+  .sem-accordion-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.65rem 1rem;
+    background: var(--tan);
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--brown);
+    transition: background 0.15s;
+  }
+
+  .sem-accordion-header:hover { background: #ddd4c8; }
+
+  .sem-accordion-header .sem-chevron {
+    margin-left: auto;
+    font-size: 0.7rem;
+    transition: transform 0.2s;
+    color: var(--text-muted);
+  }
+
+  .sem-accordion.open .sem-accordion-header .sem-chevron {
+    transform: rotate(180deg);
+  }
+
+  .sem-accordion-body {
+    display: none;
+    padding: 0.6rem 0.6rem 0.6rem;
+    background: var(--bg);
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sem-accordion.open .sem-accordion-body {
+    display: flex;
+  }
+
   /* DATE CARD */
   .date-card {
     background: var(--white);
@@ -790,31 +842,63 @@ function renderDates() {
   const past     = filtered.filter(e => e.date && e.date < today);
 
   upList.innerHTML = '';
-  let lastMonth = null;
   if (!upcoming.length) {
     upList.innerHTML = '<div class="no-dates">No dates for this category.</div>';
   } else {
+    // Group events: semester-fuzzy ones into collapsible accordions, rest by month
+    let lastMonthKey  = null;
+    let lastSemKey    = null;
+    let semAccordion  = null;
+    let semBody       = null;
+    let regularGroup  = null; // current month bucket
+
+    const flushRegular = () => { regularGroup = null; };
+
     upcoming.forEach(ev => {
-      let monthKey = null;
-      if (ev.date) {
-        if (ev.fuzzy === 'semester') {
-          monthKey = '📅 ' + (ev.semLabel || 'Semester') + ' ' + ev.date.getFullYear() + ' — Date TBD';
-        } else if (ev.fuzzy === 'month') {
+      if (ev.fuzzy === 'semester') {
+        // ── Semester accordion group ──
+        const semKey = (ev.semLabel || 'Semester') + ' ' + (ev.date ? ev.date.getFullYear() : '');
+        if (semKey !== lastSemKey) {
+          lastSemKey   = semKey;
+          semAccordion = document.createElement('div');
+          semAccordion.className = 'sem-accordion';
+
+          const header = document.createElement('div');
+          header.className = 'sem-accordion-header';
+          header.innerHTML = `📅 ${ev.semLabel || 'Semester'} ${ev.date ? ev.date.getFullYear() : ''} — Dates TBD <span class="sem-chevron">▾</span>`;
+          header.addEventListener('click', () => {
+            semAccordion.classList.toggle('open');
+          });
+
+          semBody = document.createElement('div');
+          semBody.className = 'sem-accordion-body';
+
+          semAccordion.appendChild(header);
+          semAccordion.appendChild(semBody);
+          upList.appendChild(semAccordion);
+          lastMonthKey = null; // reset month tracking after semester group
+        }
+        semBody.appendChild(buildCard(ev, false));
+      } else {
+        // ── Regular month group ──
+        semAccordion = null; semBody = null; lastSemKey = null;
+
+        let monthKey = null;
+        if (ev.date) {
           monthKey = MONS[ev.date.getMonth()] + ' ' + ev.date.getFullYear();
         } else {
-          monthKey = MONS[ev.date.getMonth()] + ' ' + ev.date.getFullYear();
+          monthKey = 'Date TBD';
         }
-      } else {
-        monthKey = 'Date TBD';
+
+        if (monthKey !== lastMonthKey) {
+          lastMonthKey = monthKey;
+          const divider = document.createElement('div');
+          divider.className = 'month-divider';
+          divider.textContent = monthKey;
+          upList.appendChild(divider);
+        }
+        upList.appendChild(buildCard(ev, false));
       }
-      if (monthKey && monthKey !== lastMonth) {
-        const div = document.createElement('div');
-        div.className = 'month-divider';
-        div.textContent = monthKey;
-        upList.appendChild(div);
-        lastMonth = monthKey;
-      }
-      upList.appendChild(buildCard(ev, false));
     });
   }
 
