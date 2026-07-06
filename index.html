@@ -368,6 +368,35 @@
     letter-spacing: 0.1em; text-transform: uppercase;
     color: var(--text-muted);
   }
+
+  /* NAV */
+  .page-nav {
+    background: var(--brown-light);
+    border-bottom: 2px solid var(--orange);
+  }
+
+  .page-nav-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+  }
+
+  .nav-link {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.7rem 1.4rem;
+    text-decoration: none;
+    color: var(--tan);
+    border-bottom: 3px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+    margin-bottom: -2px;
+  }
+
+  .nav-link:hover { color: var(--white); }
+  .nav-link.active { color: var(--white); border-bottom-color: var(--orange); }
 </style>
 </head>
 <body>
@@ -382,6 +411,13 @@
     </div>
   </div>
 </header>
+
+<nav class="page-nav">
+  <div class="page-nav-inner">
+    <a class="nav-link active" href="index.html">Events Calendar</a>
+    <a class="nav-link" href="important-dates.html">Important Dates</a>
+  </div>
+</nav>
 
 <main>
   <div id="loading">Loading events…</div>
