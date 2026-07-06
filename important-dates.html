@@ -116,9 +116,104 @@
 
   /* MAIN */
   main {
-    max-width: 900px;
+    max-width: 1060px;
     margin: 0 auto;
     padding: 2.5rem 2rem 5rem;
+    display: flex;
+    gap: 1.75rem;
+    align-items: flex-start;
+  }
+
+  .dates-column {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* FILTER SIDEBAR */
+  .filter-sidebar {
+    width: 160px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 1.5rem;
+  }
+
+  .filter-label {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text-mid);
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 0.4rem;
+    transition: all 0.15s;
+  }
+
+  .filter-btn:hover {
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+
+  .filter-btn.active {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: white;
+  }
+
+  .filter-btn .filter-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .filter-btn-all {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text-muted);
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 0.75rem;
+    transition: all 0.15s;
+  }
+
+  .filter-btn-all:hover { border-color: var(--orange); color: var(--orange); }
+  .filter-btn-all.active { background: var(--orange); border-color: var(--orange); color: white; }
+
+  @media (max-width: 600px) {
+    main { flex-direction: column; }
+    .filter-sidebar { width: 100%; position: static; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+    .filter-label { width: 100%; margin-bottom: 0; }
+    .filter-btn, .filter-btn-all { width: auto; margin-bottom: 0; }
   }
 
   .section-label {
@@ -328,10 +423,17 @@
 </nav>
 
 <main>
-  <div id="loading">Loading dates…</div>
-  <div id="error-msg" style="display:none"></div>
-  <div id="dates-container" style="display:none">
-    <p class="section-label">Upcoming Dates</p>
+  <div id="loading" style="flex:1;text-align:center;padding:5rem 2rem;">Loading dates…</div>
+  <div id="error-msg" style="display:none;flex:1;text-align:center;padding:5rem 2rem;color:var(--orange);font-size:0.75rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;"></div>
+
+  <aside class="filter-sidebar" id="filter-sidebar" style="display:none">
+    <p class="filter-label">Filter by type</p>
+    <button class="filter-btn-all active" id="filter-all" onclick="setFilter(null, this)">All Dates</button>
+    <div id="filter-buttons"></div>
+  </aside>
+
+  <div class="dates-column" id="dates-container" style="display:none">
+    <p class="section-label" id="section-label-text">Upcoming Dates</p>
     <div id="upcoming-list" class="dates-list"></div>
     <div id="past-section" style="display:none">
       <p class="past-label">Past Dates</p>
@@ -424,13 +526,98 @@ function buildCard(ev, isPast) {
   return card;
 }
 
+// Color map for filter dots
+const TYPE_COLORS = {
+  'deadline': '#7a2e10',
+  'due':      '#7a2e10',
+  'holiday':  '#7b5a12',
+  'break':    '#7b5a12',
+  'no class': '#7b5a12',
+  'academic': '#1c626d',
+  'registration': '#1c626d',
+  'grade':    '#1c626d',
+  'exam':     '#1c626d',
+};
+
+function getDotColor(type) {
+  if (!type) return 'var(--orange)';
+  const t = type.toLowerCase();
+  for (const [key, color] of Object.entries(TYPE_COLORS)) {
+    if (t.includes(key)) return color;
+  }
+  return 'var(--orange)';
+}
+
+let allEvents = [];
+let activeFilter = null;
+
+function setFilter(type, btn) {
+  // If clicking active filter, clear it
+  if (activeFilter === type) {
+    activeFilter = null;
+    document.querySelectorAll('.filter-btn, .filter-btn-all').forEach(b => b.classList.remove('active'));
+    document.getElementById('filter-all').classList.add('active');
+  } else {
+    activeFilter = type;
+    document.querySelectorAll('.filter-btn, .filter-btn-all').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+  }
+  renderDates();
+}
+
+function renderDates() {
+  const upList   = document.getElementById('upcoming-list');
+  const pastList = document.getElementById('past-list');
+  const pastSection = document.getElementById('past-section');
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  let filtered = allEvents;
+  if (activeFilter) {
+    filtered = allEvents.filter(ev => {
+      if (!ev.type) return false;
+      return ev.type.split(',').map(t => t.trim()).some(t => t.toLowerCase() === activeFilter.toLowerCase());
+    });
+  }
+
+  const upcoming = filtered.filter(e => !e.date || e.date >= today);
+  const past     = filtered.filter(e => e.date && e.date < today);
+
+  upList.innerHTML = '';
+  let lastMonth = null;
+  if (!upcoming.length) {
+    upList.innerHTML = '<div class="no-dates">No dates for this category.</div>';
+  } else {
+    upcoming.forEach(ev => {
+      const m = ev.date ? ev.date.getMonth() : null;
+      const y = ev.date ? ev.date.getFullYear() : null;
+      const monthKey = m !== null ? `${MONS[m]} ${y}` : null;
+      if (monthKey && monthKey !== lastMonth) {
+        const div = document.createElement('div');
+        div.className = 'month-divider';
+        div.textContent = monthKey;
+        upList.appendChild(div);
+        lastMonth = monthKey;
+      }
+      upList.appendChild(buildCard(ev, false));
+    });
+  }
+
+  pastList.innerHTML = '';
+  if (past.length) {
+    past.forEach(ev => pastList.appendChild(buildCard(ev, true)));
+    pastSection.style.display = 'block';
+  } else {
+    pastSection.style.display = 'none';
+  }
+}
+
 async function init() {
   const loading     = document.getElementById('loading');
   const errorMsg    = document.getElementById('error-msg');
   const container   = document.getElementById('dates-container');
-  const upList      = document.getElementById('upcoming-list');
-  const pastList    = document.getElementById('past-list');
-  const pastSection = document.getElementById('past-section');
+  const sidebar     = document.getElementById('filter-sidebar');
+  const filterBtns  = document.getElementById('filter-buttons');
 
   try {
     const resp = await fetch(CSV_URL);
@@ -438,43 +625,33 @@ async function init() {
     const csv = await resp.text();
     const rows = parseCSV(csv);
 
-    const dates = rows.map(r => ({
+    allEvents = rows.map(r => ({
       date:  parseDate(get(r, 'Date', 'date')),
       event: get(r, 'Event', 'event', 'name', 'title'),
       time:  get(r, 'Time', 'time'),
       type:  get(r, 'Type', 'type'),
     })).filter(e => e.event);
 
-    const today = new Date(); today.setHours(0,0,0,0);
-    const upcoming = dates.filter(e => !e.date || e.date >= today).sort((a,b) => (!a.date?1:!b.date?-1:a.date-b.date));
-    const past     = dates.filter(e => e.date && e.date < today).sort((a,b) => b.date-a.date);
+    // Collect unique types
+    const typeSet = new Set();
+    allEvents.forEach(ev => {
+      if (ev.type) ev.type.split(',').map(t => t.trim()).filter(Boolean).forEach(t => typeSet.add(t));
+    });
 
-    let lastMonth = null;
-    if (!upcoming.length) {
-      upList.innerHTML = '<div class="no-dates">No upcoming dates.</div>';
-    } else {
-      upcoming.forEach(ev => {
-        const m = ev.date ? ev.date.getMonth() : null;
-        const y = ev.date ? ev.date.getFullYear() : null;
-        const monthKey = m !== null ? `${MONS[m]} ${y}` : null;
-        if (monthKey && monthKey !== lastMonth) {
-          const div = document.createElement('div');
-          div.className = 'month-divider';
-          div.textContent = monthKey;
-          upList.appendChild(div);
-          lastMonth = monthKey;
-        }
-        upList.appendChild(buildCard(ev, false));
-      });
-    }
-
-    if (past.length) {
-      past.forEach(ev => pastList.appendChild(buildCard(ev, true)));
-      pastSection.style.display = 'block';
-    }
+    // Build filter buttons
+    Array.from(typeSet).sort().forEach(type => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn';
+      btn.innerHTML = `<span class="filter-dot" style="background:${getDotColor(type)}"></span>${type}`;
+      btn.addEventListener('click', () => setFilter(type, btn));
+      filterBtns.appendChild(btn);
+    });
 
     loading.style.display = 'none';
     container.style.display = 'block';
+    sidebar.style.display = 'block';
+
+    renderDates();
 
   } catch(err) {
     loading.style.display = 'none';
