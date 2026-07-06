@@ -762,6 +762,10 @@ async function init() {
     const typeSet = new Set();
     allEvents.forEach(ev => { if (ev.type1) typeSet.add(ev.type1); });
 
+    console.log('Total events:', allEvents.length);
+    console.log('Sample event:', allEvents[0]);
+    console.log('Type1 values found:', Array.from(typeSet));
+
     Array.from(typeSet).sort().forEach(type => {
       const col = getColor(type);
       const btn = document.createElement('button');
