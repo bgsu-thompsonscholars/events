@@ -408,7 +408,6 @@
     display: none;
     padding: 0.6rem 0.6rem 0.6rem;
     background: var(--bg);
-    display: none;
     flex-direction: column;
     gap: 0.5rem;
   }
@@ -727,7 +726,7 @@ const iconInfo  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" s
 // ── BUILD CARD ──
 function buildCard(ev, isPast) {
   const d   = ev.date;
-  const col = getColor(ev.type1);
+  const col = getColor(ev.type1 ? ev.type1.split(',')[0].trim() : '');
   const card = document.createElement('div');
   card.className = 'date-card' + (isPast ? ' past' : '') + (ev.isRange ? ' range-card' : '');
   card.style.setProperty('--card-color', col.border);
@@ -752,8 +751,11 @@ function buildCard(ev, isPast) {
   }
 
   // Type chips
-  const type1Chip = ev.type1
-    ? `<span class="chip chip-type1" style="background:${col.bg};border-color:${col.border};color:${col.text}">${iconTag} ${ev.type1}</span>`
+  const type1Chips = ev.type1
+    ? ev.type1.split(',').map(t => t.trim()).filter(Boolean).map(t => {
+        const c = getColor(t);
+        return `<span class="chip chip-type1" style="background:${c.bg};border-color:${c.border};color:${c.text}">${iconTag} ${t}</span>`;
+      }).join('')
     : '';
   const type2Chip = ev.type2 && ev.type2.toLowerCase() !== ev.type1.toLowerCase()
     ? `<span class="chip chip-type2" style="background:${col.bg};border-color:${col.border};color:${col.text};opacity:0.8">${ev.type2}</span>`
@@ -779,7 +781,7 @@ function buildCard(ev, isPast) {
       <div class="date-title">${ev.event || 'Date'}</div>
       <div class="date-chips">
         ${ev.time ? `<span class="chip chip-time">${iconClock} ${ev.time}</span>` : ''}
-        ${type1Chip}${type2Chip}${rangeChip}${fuzzyChip}
+        ${type1Chips}${type2Chip}${rangeChip}${fuzzyChip}
       </div>
       ${ev.info ? `<div class="date-info-text">${ev.info}</div>` : ''}
     </div>`;
@@ -829,7 +831,8 @@ function renderDates() {
   if (activeFilter) {
     filtered = allEvents.filter(ev => {
       if (!ev.type1) return false;
-      const t1match = ev.type1.toLowerCase().trim() === activeFilter.type1.toLowerCase().trim();
+      const types1 = ev.type1.split(',').map(t => t.trim().toLowerCase());
+      const t1match = types1.includes(activeFilter.type1.toLowerCase().trim());
       if (!t1match) return false;
       if (activeFilter.type2) {
         return ev.type2 && ev.type2.toLowerCase().trim() === activeFilter.type2.toLowerCase().trim();
@@ -929,7 +932,8 @@ async function init() {
     rows.forEach(r => {
       const event = get(r, 'Event', 'event');
       if (!event) return;
-      const type1    = get(r, 'Type1', 'type1');
+      const type1Raw = get(r, 'Type1', 'type1');
+      const type1    = type1Raw; // keep raw for splitting later
       const type2    = get(r, 'Type2', 'type2');
       const info     = get(r, 'Info',  'info');
       const semester = get(r, 'Semester', 'semester');
@@ -964,10 +968,13 @@ async function init() {
     const typeMap = new Map(); // type1 → Set of type2
     allEvents.forEach(ev => {
       if (!ev.type1) return;
-      if (!typeMap.has(ev.type1)) typeMap.set(ev.type1, new Set());
-      if (ev.type2 && ev.type2.toLowerCase().trim() !== ev.type1.toLowerCase().trim()) {
-        typeMap.get(ev.type1).add(ev.type2);
-      }
+      // Support comma-separated type1 values e.g. "Thompson, Graduation"
+      ev.type1.split(',').map(t => t.trim()).filter(Boolean).forEach(t1 => {
+        if (!typeMap.has(t1)) typeMap.set(t1, new Set());
+        if (ev.type2 && ev.type2.toLowerCase().trim() !== t1.toLowerCase().trim()) {
+          typeMap.get(t1).add(ev.type2);
+        }
+      });
     });
 
     Array.from(typeMap.keys()).sort().forEach(type1 => {
