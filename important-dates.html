@@ -209,6 +209,95 @@
   .filter-btn-all:hover { border-color: var(--orange); color: var(--orange); }
   .filter-btn-all.active { background: var(--orange); border-color: var(--orange); color: white; }
 
+  .filter-group { margin-bottom: 0.3rem; }
+
+  .filter-group-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 0.45rem 0.75rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text-mid);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+  }
+
+  .filter-group-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  .filter-group-btn.active {
+    background: var(--btn-active-bg, var(--orange)) !important;
+    border-color: var(--btn-active-bg, var(--orange)) !important;
+    color: white !important;
+  }
+
+  .filter-group-btn .filter-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-right: 4px;
+  }
+
+  .filter-group-btn .chevron {
+    font-size: 0.6rem;
+    transition: transform 0.2s;
+    margin-left: auto;
+    padding-left: 6px;
+    flex-shrink: 0;
+  }
+
+  .filter-group-btn.open .chevron { transform: rotate(180deg); }
+
+  .filter-sub-list {
+    display: none;
+    padding: 0.3rem 0 0.1rem 1rem;
+  }
+
+  .filter-group-btn.open + .filter-sub-list { display: block; }
+
+  .filter-sub-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.65rem;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-align: left;
+    margin-bottom: 0.2rem;
+    transition: all 0.15s;
+  }
+
+  .filter-sub-btn:hover { background: var(--tan); color: var(--text-mid); }
+
+  .filter-sub-btn.active {
+    background: var(--btn-active-bg, var(--orange));
+    color: white;
+    border-color: transparent;
+  }
+
+  .filter-sub-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
   @media (max-width: 600px) {
     main { flex-direction: column; }
     .filter-sidebar { width: 100%; position: static; display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
@@ -466,7 +555,7 @@ const MONS = ['January','February','March','April','May','June','July','August',
 const DOW  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 // Semester start months (used for sort order when only semester known)
-const SEM_MONTH = { 'fall': 8, 'spring': 1, 'summer': 5 };
+const SEM_MONTH = { 'fall': 7, 'spring': 0, 'summer': 4 }; // Month index for start of semester grouping
 
 // ── COLOR MAP ──
 const TYPE1_COLORS = {
@@ -597,17 +686,17 @@ function buildCard(ev, isPast) {
   if (d) {
     if (ev.fuzzy === 'month') {
       monStr = MON[d.getMonth()];
-      dayStr = '·';
+      dayStr = '–';
     } else if (ev.fuzzy === 'semester') {
       monStr = ev.semLabel ? ev.semLabel.toUpperCase().slice(0,3) : '···';
-      dayStr = '·';
+      dayStr = '–';
     } else {
       monStr = MON[d.getMonth()];
       dayStr = d.getDate();
       dowStr = DOW[d.getDay()];
     }
   } else {
-    monStr = 'TBD'; dayStr = '·';
+    monStr = 'TBD'; dayStr = '–';
   }
 
   // Type chips
@@ -647,19 +736,34 @@ function buildCard(ev, isPast) {
 }
 
 // ── FILTER & RENDER ──
-let allEvents    = [];
-let activeFilter = null;
+let allEvents = [];
 
-function setFilter(type, btn) {
-  if (activeFilter === type) {
+let activeFilter  = null; // { type1, type2 } or null
+let activeFilterBtn = null;
+
+function clearAllFilterActive() {
+  document.querySelectorAll('.filter-group-btn, .filter-sub-btn, .filter-btn-all').forEach(b => b.classList.remove('active'));
+}
+
+function setActiveFilter(type1, type2, btn) {
+  // If clicking the same filter, clear it
+  if (activeFilter && activeFilter.type1 === type1 && activeFilter.type2 === type2) {
     activeFilter = null;
-    document.querySelectorAll('.filter-btn, .filter-btn-all').forEach(b => b.classList.remove('active'));
+    clearAllFilterActive();
     document.getElementById('filter-all').classList.add('active');
   } else {
-    activeFilter = type;
-    document.querySelectorAll('.filter-btn, .filter-btn-all').forEach(b => b.classList.remove('active'));
+    activeFilter = { type1, type2 };
+    clearAllFilterActive();
     if (btn) btn.classList.add('active');
   }
+  renderDates();
+}
+
+// Keep setFilter for the "All Dates" button
+function setFilter(type, btn) {
+  activeFilter = null;
+  clearAllFilterActive();
+  document.getElementById('filter-all').classList.add('active');
   renderDates();
 }
 
@@ -669,9 +773,18 @@ function renderDates() {
   const pastSection = document.getElementById('past-section');
   const today       = new Date(); today.setHours(0,0,0,0);
 
-  let filtered = activeFilter
-    ? allEvents.filter(ev => ev.type1 && ev.type1.toLowerCase().trim() === activeFilter.toLowerCase().trim())
-    : allEvents;
+  let filtered = allEvents;
+  if (activeFilter) {
+    filtered = allEvents.filter(ev => {
+      if (!ev.type1) return false;
+      const t1match = ev.type1.toLowerCase().trim() === activeFilter.type1.toLowerCase().trim();
+      if (!t1match) return false;
+      if (activeFilter.type2) {
+        return ev.type2 && ev.type2.toLowerCase().trim() === activeFilter.type2.toLowerCase().trim();
+      }
+      return true;
+    });
+  }
 
   const upcoming = filtered.filter(e => !e.date || e.date >= today);
   const past     = filtered.filter(e => e.date && e.date < today);
@@ -685,10 +798,14 @@ function renderDates() {
       let monthKey = null;
       if (ev.date) {
         if (ev.fuzzy === 'semester') {
-          monthKey = ev.semLabel ? ev.semLabel + ' ' + ev.date.getFullYear() : 'TBD';
+          monthKey = '📅 ' + (ev.semLabel || 'Semester') + ' ' + ev.date.getFullYear() + ' — Date TBD';
+        } else if (ev.fuzzy === 'month') {
+          monthKey = MONS[ev.date.getMonth()] + ' ' + ev.date.getFullYear();
         } else {
           monthKey = MONS[ev.date.getMonth()] + ' ' + ev.date.getFullYear();
         }
+      } else {
+        monthKey = 'Date TBD';
       }
       if (monthKey && monthKey !== lastMonth) {
         const div = document.createElement('div');
@@ -758,22 +875,69 @@ async function init() {
       return a.date - b.date;
     });
 
-    // Build filter buttons from unique Type1 values
-    const typeSet = new Set();
-    allEvents.forEach(ev => { if (ev.type1) typeSet.add(ev.type1); });
+    // Build accordion filter buttons — Type1 as parent, Type2 as children
+    // Collect type1 → set of type2 values
+    const typeMap = new Map(); // type1 → Set of type2
+    allEvents.forEach(ev => {
+      if (!ev.type1) return;
+      if (!typeMap.has(ev.type1)) typeMap.set(ev.type1, new Set());
+      if (ev.type2 && ev.type2.toLowerCase().trim() !== ev.type1.toLowerCase().trim()) {
+        typeMap.get(ev.type1).add(ev.type2);
+      }
+    });
 
-    console.log('Total events:', allEvents.length);
-    console.log('Sample event:', allEvents[0]);
-    console.log('Type1 values found:', Array.from(typeSet));
+    Array.from(typeMap.keys()).sort().forEach(type1 => {
+      const col    = getColor(type1);
+      const subs   = Array.from(typeMap.get(type1)).sort();
+      const group  = document.createElement('div');
+      group.className = 'filter-group';
 
-    Array.from(typeSet).sort().forEach(type => {
-      const col = getColor(type);
-      const btn = document.createElement('button');
-      btn.className = 'filter-btn';
-      btn.innerHTML = `<span class="filter-dot" style="background:${col.dot}"></span>${type}`;
-      btn.style.setProperty('--btn-active-bg', col.dot);
-      btn.addEventListener('click', () => setFilter(type, btn));
-      filterBtns.appendChild(btn);
+      // Parent button
+      const parentBtn = document.createElement('button');
+      parentBtn.className = 'filter-group-btn';
+      parentBtn.style.setProperty('--btn-active-bg', col.dot);
+      const hasDropdown = subs.length > 0;
+      parentBtn.innerHTML = `<span class="filter-dot" style="background:${col.dot}"></span>${type1}${hasDropdown ? '<span class="chevron">▾</span>' : ''}`;
+
+      parentBtn.addEventListener('click', () => {
+        if (hasDropdown) {
+          // Toggle open/closed
+          const wasOpen = parentBtn.classList.contains('open');
+          parentBtn.classList.toggle('open');
+          // If activating, also filter by type1
+          if (!wasOpen) {
+            setActiveFilter(type1, null, parentBtn);
+          } else if (!parentBtn.classList.contains('active')) {
+            // just close, don't change filter
+          }
+        } else {
+          setActiveFilter(type1, null, parentBtn);
+        }
+      });
+
+      group.appendChild(parentBtn);
+
+      // Sub buttons
+      if (hasDropdown) {
+        const subList = document.createElement('div');
+        subList.className = 'filter-sub-list';
+
+        subs.forEach(type2 => {
+          const subBtn = document.createElement('button');
+          subBtn.className = 'filter-sub-btn';
+          subBtn.style.setProperty('--btn-active-bg', col.dot);
+          subBtn.innerHTML = `<span class="filter-sub-dot" style="background:${col.dot}"></span>${type2}`;
+          subBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            setActiveFilter(type1, type2, subBtn);
+          });
+          subList.appendChild(subBtn);
+        });
+
+        group.appendChild(subList);
+      }
+
+      filterBtns.appendChild(group);
     });
 
     loading.style.display = 'none';
