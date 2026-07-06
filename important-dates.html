@@ -360,10 +360,26 @@
   }
 
   .chip-time  { background: var(--seafoam-light); color: #2a6b5f; border: 1px solid #aad6ce; }
-  .chip-type  { background: var(--orange-light);  color: var(--orange); border: 1px solid var(--orange-mid); }
-  .chip-academic { background: var(--teal-light); color: var(--teal); border: 1px solid #b8d8dc; }
-  .chip-deadline { background: #faece7; color: #7a2e10; border: 1px solid #f5c4b3; }
-  .chip-holiday  { background: var(--gold-light);  color: #7b5a12; border: 1px solid #f0d898; }
+  .chip-type1 { font-weight: 700; border-width: 1.5px; }
+  .chip-type2 { font-weight: 600; border-width: 1px; font-size: 0.6rem; }
+  .chip-range { background: var(--seafoam-light); color: #2a6b5f; border: 1px solid #aad6ce; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.04em; padding: 2px 7px; border-radius: 20px; }
+  .chip-fuzzy { background: var(--tan); color: var(--text-muted); border: 1px solid var(--border); font-style: italic; }
+
+  .date-info-text {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-mid);
+    line-height: 1.6;
+    margin-top: 0.4rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--tan);
+  }
+
+  .filter-btn.active {
+    background: var(--btn-active-bg, var(--orange)) !important;
+    border-color: var(--btn-active-bg, var(--orange)) !important;
+    color: white !important;
+  }
 
   .date-card.past { opacity: 0.55; }
   .date-card.past .date-badge { background: var(--tan); border-color: var(--border); }
@@ -444,11 +460,33 @@
 
 <script>
 const SHEET_ID = '1Zwi_S5IC9PXuKiy8ruc0csk32KIybqeTiurNC6ImHdc';
-const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=1840987550`;
+const CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=1840987550`;
 const MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DOW  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
+// Semester start months (used for sort order when only semester known)
+const SEM_MONTH = { 'fall': 8, 'spring': 1, 'summer': 5 };
+
+// ── COLOR MAP ──
+const TYPE1_COLORS = {
+  'campus event':        { bg: '#e8f4f1', border: '#80baac', text: '#1c626d',  dot: '#1c626d'  },
+  'class schedule':      { bg: '#fff3ee', border: '#ffc9b0', text: '#fd5000',  dot: '#fd5000'  },
+  'financial':           { bg: '#fdf6e3', border: '#f0d898', text: '#7b5a12',  dot: '#c8900a'  },
+  'grades':              { bg: '#f0eefa', border: '#c4b8f0', text: '#4a3a9e',  dot: '#4a3a9e'  },
+  'graduation':          { bg: '#fff8e1', border: '#f5c163', text: '#4f2c1d',  dot: '#4f2c1d'  },
+  'semester dates':      { bg: '#e6f1fb', border: '#a0c8f0', text: '#185fa5',  dot: '#185fa5'  },
+  'thompson':            { bg: '#fff3ee', border: '#ffc9b0', text: '#fd5000',  dot: '#fd5000'  },
+  'thompson leadership': { bg: '#fdeaea', border: '#f5a8a8', text: '#a82020',  dot: '#a82020'  },
+};
+const DEFAULT_COLOR = { bg: '#f0ede8', border: '#ddd4c8', text: '#4f2c1d', dot: '#9a7c6e' };
+
+function getColor(type1) {
+  if (!type1) return DEFAULT_COLOR;
+  return TYPE1_COLORS[type1.toLowerCase().trim()] || DEFAULT_COLOR;
+}
+
+// ── CSV PARSING ──
 function parseCSV(text) {
   const lines = text.trim().split('\n');
   const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
@@ -474,85 +512,145 @@ function get(row, ...keys) {
   return '';
 }
 
-function parseDate(raw) {
+// ── DATE PARSING ──
+function parseSingleDate(raw) {
   if (!raw) return null;
-  const cleaned = raw.replace(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s*/i, '');
-  let d = new Date(cleaned);
-  if (!isNaN(d.getTime())) return d;
-  const p = raw.split(/[\/\-\.]/);
-  if (p.length >= 3) {
-    d = new Date(`${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`);
-    if (!isNaN(d.getTime())) return d;
+  const cleaned = raw.trim().replace(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday),\s*/i, '');
+
+  // "Month YYYY" — e.g. "March 2027"
+  const monthYear = cleaned.match(/^([A-Za-z]+)\s+(\d{4})$/);
+  if (monthYear) {
+    const d = new Date(`${monthYear[1]} 1, ${monthYear[2]}`);
+    if (!isNaN(d.getTime())) return { date: d, fuzzy: 'month' };
   }
-  return null;
+
+  // "Fall/Spring/Summer YYYY"
+  const semYear = cleaned.match(/^(fall|spring|summer)\s+(\d{4})$/i);
+  if (semYear) {
+    const sem = semYear[1].toLowerCase();
+    const yr  = parseInt(semYear[2]);
+    const mo  = SEM_MONTH[sem] || 1;
+    return { date: new Date(yr, mo, 1), fuzzy: 'semester', semLabel: semYear[1] };
+  }
+
+  // "TBD"
+  if (/^tbd$/i.test(cleaned)) return { date: null, fuzzy: 'tbd' };
+
+  // Normal date
+  let d = new Date(cleaned);
+  if (!isNaN(d.getTime())) return { date: d, fuzzy: false };
+
+  // M/D/YY or M/D/YYYY
+  const p = cleaned.split(/[\/\.]/);
+  if (p.length >= 3) {
+    let y = p[2].trim();
+    if (y.length === 2) y = '20' + y;
+    d = new Date(`${y}-${p[0].trim().padStart(2,'0')}-${p[1].trim().padStart(2,'0')}`);
+    if (!isNaN(d.getTime())) return { date: d, fuzzy: false };
+  }
+
+  return { date: null, fuzzy: 'tbd' };
 }
 
-const iconClock = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
-const iconTag   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`;
+function parseDateField(raw) {
+  if (!raw) return [{ date: null, fuzzy: 'tbd', isRange: false }];
 
-function typeChipClass(type) {
-  if (!type) return 'chip-type';
-  const t = type.toLowerCase();
-  if (t.includes('deadline') || t.includes('due')) return 'chip-deadline';
-  if (t.includes('holiday') || t.includes('break') || t.includes('no class')) return 'chip-holiday';
-  if (t.includes('academic') || t.includes('registration') || t.includes('grade') || t.includes('exam')) return 'chip-academic';
-  return 'chip-type';
+  // Range: "3/30/27 - 3/31/27"
+  const rangeSep = raw.match(/^(.+?)\s*[-–]\s*(.+)$/);
+  if (rangeSep) {
+    const r1 = parseSingleDate(rangeSep[1]);
+    const r2 = parseSingleDate(rangeSep[2]);
+    if (r1 && r1.date && r2 && r2.date && r1.date.getTime() !== r2.date.getTime()) {
+      const days = [];
+      const cur = new Date(r1.date);
+      let idx = 1;
+      const total = Math.round((r2.date - r1.date) / (1000*60*60*24)) + 1;
+      while (cur <= r2.date) {
+        days.push({ date: new Date(cur), fuzzy: false, isRange: true, rangeIndex: idx, rangeTotal: total });
+        cur.setDate(cur.getDate() + 1);
+        idx++;
+      }
+      return days;
+    }
+  }
+
+  const r = parseSingleDate(raw);
+  return [{ ...r, isRange: false }];
 }
 
+// ── ICONS ──
+const iconClock = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+const iconTag   = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`;
+const iconInfo  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+
+// ── BUILD CARD ──
 function buildCard(ev, isPast) {
-  const d = ev.date;
+  const d   = ev.date;
+  const col = getColor(ev.type1);
   const card = document.createElement('div');
-  card.className = 'date-card' + (isPast ? ' past' : '');
+  card.className = 'date-card' + (isPast ? ' past' : '') + (ev.isRange ? ' range-card' : '');
+  card.style.setProperty('--card-color', col.border);
+  card.style.borderLeft = `4px solid ${col.border}`;
 
-  const typeChips = ev.type
-    ? ev.type.split(',').map(t => t.trim()).filter(Boolean)
-        .map(t => `<span class="chip ${typeChipClass(t)}">${iconTag} ${t}</span>`).join(' ')
+  // Date badge
+  let monStr = '—', dayStr = '—', dowStr = '';
+  if (d) {
+    if (ev.fuzzy === 'month') {
+      monStr = MON[d.getMonth()];
+      dayStr = '·';
+    } else if (ev.fuzzy === 'semester') {
+      monStr = ev.semLabel ? ev.semLabel.toUpperCase().slice(0,3) : '···';
+      dayStr = '·';
+    } else {
+      monStr = MON[d.getMonth()];
+      dayStr = d.getDate();
+      dowStr = DOW[d.getDay()];
+    }
+  } else {
+    monStr = 'TBD'; dayStr = '·';
+  }
+
+  // Type chips
+  const type1Chip = ev.type1
+    ? `<span class="chip chip-type1" style="background:${col.bg};border-color:${col.border};color:${col.text}">${iconTag} ${ev.type1}</span>`
+    : '';
+  const type2Chip = ev.type2 && ev.type2.toLowerCase() !== ev.type1.toLowerCase()
+    ? `<span class="chip chip-type2" style="background:${col.bg};border-color:${col.border};color:${col.text};opacity:0.8">${ev.type2}</span>`
+    : '';
+
+  const rangeChip = ev.isRange
+    ? `<span class="chip chip-range">Day ${ev.rangeIndex} of ${ev.rangeTotal}</span>`
+    : '';
+
+  const fuzzyChip = ev.fuzzy === 'month'
+    ? `<span class="chip chip-fuzzy">Exact date TBD</span>`
+    : ev.fuzzy === 'semester'
+    ? `<span class="chip chip-fuzzy">${ev.semLabel || 'Semester'} — date TBD</span>`
     : '';
 
   card.innerHTML = `
-    <div class="date-badge">
-      <div class="mon">${d ? MON[d.getMonth()] : '—'}</div>
-      <div class="day">${d ? d.getDate() : '—'}</div>
-      <div class="dow">${d ? DOW[d.getDay()] : ''}</div>
+    <div class="date-badge" style="background:${col.bg};border-color:${col.border}">
+      <div class="mon" style="color:${col.text}">${monStr}</div>
+      <div class="day" style="color:${col.text}">${dayStr}</div>
+      ${dowStr ? `<div class="dow">${dowStr}</div>` : ''}
     </div>
     <div class="date-info">
       <div class="date-title">${ev.event || 'Date'}</div>
       <div class="date-chips">
         ${ev.time ? `<span class="chip chip-time">${iconClock} ${ev.time}</span>` : ''}
-        ${typeChips}
+        ${type1Chip}${type2Chip}${rangeChip}${fuzzyChip}
       </div>
+      ${ev.info ? `<div class="date-info-text">${ev.info}</div>` : ''}
     </div>`;
 
   return card;
 }
 
-// Color map for filter dots
-const TYPE_COLORS = {
-  'deadline': '#7a2e10',
-  'due':      '#7a2e10',
-  'holiday':  '#7b5a12',
-  'break':    '#7b5a12',
-  'no class': '#7b5a12',
-  'academic': '#1c626d',
-  'registration': '#1c626d',
-  'grade':    '#1c626d',
-  'exam':     '#1c626d',
-};
-
-function getDotColor(type) {
-  if (!type) return 'var(--orange)';
-  const t = type.toLowerCase();
-  for (const [key, color] of Object.entries(TYPE_COLORS)) {
-    if (t.includes(key)) return color;
-  }
-  return 'var(--orange)';
-}
-
-let allEvents = [];
+// ── FILTER & RENDER ──
+let allEvents    = [];
 let activeFilter = null;
 
 function setFilter(type, btn) {
-  // If clicking active filter, clear it
   if (activeFilter === type) {
     activeFilter = null;
     document.querySelectorAll('.filter-btn, .filter-btn-all').forEach(b => b.classList.remove('active'));
@@ -566,19 +664,14 @@ function setFilter(type, btn) {
 }
 
 function renderDates() {
-  const upList   = document.getElementById('upcoming-list');
-  const pastList = document.getElementById('past-list');
+  const upList      = document.getElementById('upcoming-list');
+  const pastList    = document.getElementById('past-list');
   const pastSection = document.getElementById('past-section');
+  const today       = new Date(); today.setHours(0,0,0,0);
 
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  let filtered = allEvents;
-  if (activeFilter) {
-    filtered = allEvents.filter(ev => {
-      if (!ev.type) return false;
-      return ev.type.split(',').map(t => t.trim()).some(t => t.toLowerCase() === activeFilter.toLowerCase());
-    });
-  }
+  let filtered = activeFilter
+    ? allEvents.filter(ev => ev.type1 && ev.type1.toLowerCase().trim() === activeFilter.toLowerCase().trim())
+    : allEvents;
 
   const upcoming = filtered.filter(e => !e.date || e.date >= today);
   const past     = filtered.filter(e => e.date && e.date < today);
@@ -589,9 +682,14 @@ function renderDates() {
     upList.innerHTML = '<div class="no-dates">No dates for this category.</div>';
   } else {
     upcoming.forEach(ev => {
-      const m = ev.date ? ev.date.getMonth() : null;
-      const y = ev.date ? ev.date.getFullYear() : null;
-      const monthKey = m !== null ? `${MONS[m]} ${y}` : null;
+      let monthKey = null;
+      if (ev.date) {
+        if (ev.fuzzy === 'semester') {
+          monthKey = ev.semLabel ? ev.semLabel + ' ' + ev.date.getFullYear() : 'TBD';
+        } else {
+          monthKey = MONS[ev.date.getMonth()] + ' ' + ev.date.getFullYear();
+        }
+      }
       if (monthKey && monthKey !== lastMonth) {
         const div = document.createElement('div');
         div.className = 'month-divider';
@@ -612,51 +710,77 @@ function renderDates() {
   }
 }
 
+// ── INIT ──
 async function init() {
-  const loading     = document.getElementById('loading');
-  const errorMsg    = document.getElementById('error-msg');
-  const container   = document.getElementById('dates-container');
-  const sidebar     = document.getElementById('filter-sidebar');
-  const filterBtns  = document.getElementById('filter-buttons');
+  const loading    = document.getElementById('loading');
+  const errorMsg   = document.getElementById('error-msg');
+  const container  = document.getElementById('dates-container');
+  const sidebar    = document.getElementById('filter-sidebar');
+  const filterBtns = document.getElementById('filter-buttons');
 
   try {
     const resp = await fetch(CSV_URL);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const csv = await resp.text();
+    const csv  = await resp.text();
     const rows = parseCSV(csv);
 
-    allEvents = rows.map(r => ({
-      date:  parseDate(get(r, 'Date', 'date')),
-      event: get(r, 'Event', 'event', 'name', 'title'),
-      time:  get(r, 'Time', 'time'),
-      type:  get(r, 'Type', 'type'),
-    })).filter(e => e.event);
-
-    // Collect unique types
-    const typeSet = new Set();
-    allEvents.forEach(ev => {
-      if (ev.type) ev.type.split(',').map(t => t.trim()).filter(Boolean).forEach(t => typeSet.add(t));
+    allEvents = [];
+    rows.forEach(r => {
+      const event = get(r, 'Event', 'event');
+      if (!event) return;
+      const type1    = get(r, 'Type1', 'type1');
+      const type2    = get(r, 'Type2', 'type2');
+      const info     = get(r, 'Info',  'info');
+      const semester = get(r, 'Semester', 'semester');
+      const dateEntries = parseDateField(get(r, 'Date', 'date'));
+      dateEntries.forEach(entry => {
+        allEvents.push({
+          date:       entry.date,
+          fuzzy:      entry.fuzzy,
+          semLabel:   entry.semLabel || semester || null,
+          event,
+          time:       get(r, 'Time', 'time'),
+          type1,
+          type2,
+          info,
+          isRange:    entry.isRange,
+          rangeIndex: entry.rangeIndex,
+          rangeTotal: entry.rangeTotal,
+        });
+      });
     });
 
-    // Build filter buttons
+    // Sort: TBD last, fuzzy semester by sem month, rest chronologically
+    allEvents.sort((a, b) => {
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date - b.date;
+    });
+
+    // Build filter buttons from unique Type1 values
+    const typeSet = new Set();
+    allEvents.forEach(ev => { if (ev.type1) typeSet.add(ev.type1); });
+
     Array.from(typeSet).sort().forEach(type => {
+      const col = getColor(type);
       const btn = document.createElement('button');
       btn.className = 'filter-btn';
-      btn.innerHTML = `<span class="filter-dot" style="background:${getDotColor(type)}"></span>${type}`;
+      btn.innerHTML = `<span class="filter-dot" style="background:${col.dot}"></span>${type}`;
+      btn.style.setProperty('--btn-active-bg', col.dot);
       btn.addEventListener('click', () => setFilter(type, btn));
       filterBtns.appendChild(btn);
     });
 
     loading.style.display = 'none';
     container.style.display = 'block';
-    sidebar.style.display = 'block';
-
+    sidebar.style.display   = 'block';
     renderDates();
 
   } catch(err) {
-    loading.style.display = 'none';
-    errorMsg.style.display = 'block';
-    errorMsg.textContent = `Couldn't load dates — ${err.message}.`;
+    loading.style.display   = 'none';
+    errorMsg.style.display  = 'block';
+    errorMsg.textContent    = `Couldn't load dates — ${err.message}.`;
   }
 }
 
