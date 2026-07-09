@@ -104,6 +104,7 @@
   .date-badge .mon { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1; }
   .date-badge .day { font-size: 1.45rem; font-weight: 800; line-height: 1.1; }
   .date-badge .dow { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); line-height: 1.3; }
+  .date-badge .day-end { font-size: 0.75rem; font-weight: 700; line-height: 1.1; margin-top: -2px; }
 
   .date-info { flex: 1; min-width: 0; }
   .date-title { font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); }
@@ -229,9 +230,6 @@ function parseSingle(raw) {
   // Sem YYYY
   const sY = s.match(/^(fall|spring|summer)\s+(\d{4})$/i);
   if(sY){ const mo=SEM_MONTH[sY[1].toLowerCase()]||0; return{date:new Date(parseInt(sY[2]),mo,1),fuzzy:'semester',semLabel:sY[1]}; }
-  // Typo: Janaury
-  const jY = s.match(/^Janaury\s+(\d{4})$/i);
-  if(jY){ return{date:new Date(parseInt(jY[1]),0,1),fuzzy:'month'}; }
   // TBD
   if(/^tbd$/i.test(s)) return{date:null,fuzzy:'tbd'};
   // Normal
@@ -249,10 +247,16 @@ function parseDateField(raw){
   if(rng){
     const r1=parseSingle(rng[1]), r2=parseSingle(rng[2]);
     if(r1&&r1.date&&r2&&r2.date&&r1.date.getTime()!==r2.date.getTime()){
-      const days=[]; const cur=new Date(r1.date); let idx=1;
       const total=Math.round((r2.date-r1.date)/(86400000))+1;
-      while(cur<=r2.date){days.push({date:new Date(cur),fuzzy:false,isRange:true,rangeIndex:idx,rangeTotal:total});cur.setDate(cur.getDate()+1);idx++;}
-      return days;
+      if(total<=3){
+        // Short range: expand to individual cards (e.g. 2-3 day events)
+        const days=[]; const cur=new Date(r1.date); let idx=1;
+        while(cur<=r2.date){days.push({date:new Date(cur),fuzzy:false,isRange:true,rangeIndex:idx,rangeTotal:total});cur.setDate(cur.getDate()+1);idx++;}
+        return days;
+      } else {
+        // Long range: single card with dateEnd for display
+        return[{date:r1.date,dateEnd:r2.date,fuzzy:false,isRange:false,isPeriod:true}];
+      }
     }
   }
   const r=parseSingle(raw);
@@ -272,10 +276,18 @@ function buildCard(ev, isPast){
   card.className='date-card'+(isPast?' past':'')+(ev.isRange?' range-card':'');
   card.style.borderLeft=`4px solid ${col.border}`;
 
-  let monStr='–', dayStr='–', dowStr='';
+  let monStr='–', dayStr='–', dowStr='', badgeExtra='';
   if(d){
     if(ev.fuzzy==='month'){ monStr=MON[d.getMonth()]; dayStr='–'; }
     else if(ev.fuzzy==='semester'){ monStr=(ev.semLabel||'SEM').toUpperCase().slice(0,3); dayStr='–'; }
+    else if(ev.isPeriod&&ev.dateEnd){
+      // Date range period: show "Oct 7–26" or "Feb 22 – Mar 15"
+      const sameMonth=d.getMonth()===ev.dateEnd.getMonth()&&d.getFullYear()===ev.dateEnd.getFullYear();
+      monStr=MON[d.getMonth()];
+      dayStr=d.getDate();
+      if(sameMonth){ badgeExtra=`<div class="day-end" style="color:${col.text}">–${ev.dateEnd.getDate()}</div>`; }
+      else{ badgeExtra=`<div class="day-end" style="color:${col.text};font-size:0.52rem">${MON[ev.dateEnd.getMonth()]} ${ev.dateEnd.getDate()}</div>`; }
+    }
     else{ monStr=MON[d.getMonth()]; dayStr=d.getDate(); dowStr=DOW[d.getDay()]; }
   } else { monStr='TBD'; dayStr='–'; }
 
@@ -467,14 +479,26 @@ async function init(){
       parentBtn.innerHTML=`<span class="filter-dot" style="background:${col.dot}"></span>${type1}${subs.length?'<span class="filter-chevron">▾</span>':''}`;
 
       parentBtn.addEventListener('click',()=>{
+        // Close all other groups
+        document.querySelectorAll('.filter-group').forEach(g=>{
+          if(g!==group){ g.classList.remove('expanded'); g.querySelector('.filter-group-btn').classList.remove('open'); }
+        });
         if(subs.length){
+          const isOpen=group.classList.contains('expanded');
           group.classList.toggle('expanded');
           parentBtn.classList.toggle('open');
         }
         setActiveFilter(type1,null,parentBtn);
-        parentBtn.style.background=activeFilter&&activeFilter.type1===type1?col.dot:'';
-        parentBtn.style.borderColor=activeFilter&&activeFilter.type1===type1?col.dot:'';
-        parentBtn.style.color=activeFilter&&activeFilter.type1===type1?'white':'';
+        // Style handled by setActiveFilter → clearActive
+        if(activeFilter&&activeFilter.type1===type1){
+          parentBtn.style.background=col.dot;
+          parentBtn.style.borderColor=col.dot;
+          parentBtn.style.color='white';
+        } else {
+          parentBtn.style.background='';
+          parentBtn.style.borderColor='';
+          parentBtn.style.color='';
+        }
       });
 
       group.appendChild(parentBtn);
