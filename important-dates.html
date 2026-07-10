@@ -478,12 +478,38 @@ function renderBoard(type1, subFilter){
     board.appendChild(sec);
   });
 
-  // Dated upcoming grid
+  // Dated upcoming grid — grouped by sub category
   if(dated.length){
-    const grid=document.createElement('div');
-    grid.className='card-grid';
-    dated.forEach(ev=>grid.appendChild(buildCard(ev,col)));
-    board.appendChild(grid);
+    // Collect ordered sub groups
+    const subOrder=[];
+    const subMap=new Map();
+    dated.forEach(ev=>{
+      // Determine which sub label to use for this card under type1
+      let subLabel='';
+      if(ev.type1.toLowerCase().trim()===type1.toLowerCase().trim()) subLabel=ev.sub1||'';
+      else if(ev.type2.toLowerCase().trim()===type1.toLowerCase().trim()) subLabel=ev.sub2||'';
+      // If sub matches type1 name, treat as no sub (general)
+      if(subLabel.toLowerCase().trim()===type1.toLowerCase().trim()) subLabel='';
+      if(!subMap.has(subLabel)){ subMap.set(subLabel,[]); subOrder.push(subLabel); }
+      subMap.get(subLabel).push(ev);
+    });
+
+    subOrder.forEach((subLabel,idx)=>{
+      // Add sub-section divider (skip if only one group and no label)
+      if(subLabel||(subOrder.length>1)){
+        const divider=document.createElement('div');
+        divider.className='sub-section-divider';
+        divider.style.cssText=`display:flex;align-items:center;gap:10px;margin:${idx===0?'0':'1.5rem'} 0 0.75rem;font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${col.text};`;
+        divider.innerHTML=subLabel
+          ? `<span style="background:${col.bg};border:1.5px solid ${col.border};color:${col.text};padding:3px 10px;border-radius:20px;">${subLabel}</span><span style="flex:1;height:1.5px;background:linear-gradient(to right,${col.border},transparent);border-radius:2px;display:block;"></span>`
+          : `<span style="color:var(--text-muted)">General</span><span style="flex:1;height:1px;background:var(--border);display:block;"></span>`;
+        board.appendChild(divider);
+      }
+      const grid=document.createElement('div');
+      grid.className='card-grid';
+      subMap.get(subLabel).forEach(ev=>grid.appendChild(buildCard(ev,col)));
+      board.appendChild(grid);
+    });
   }
 
   if(!dated.length&&!Object.keys(semGroups).length){
