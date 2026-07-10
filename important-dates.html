@@ -421,6 +421,17 @@ let allEvents=[], activeType1=null, activeSubFilter=null;
 
 function renderBoard(type1, subFilter){
   const board=document.getElementById('board');
+  // Debug logging
+  if(type1.toLowerCase().includes('grade')){
+    const matching = allEvents.filter(ev=>
+      ev.type1.toLowerCase().trim()===type1.toLowerCase().trim() ||
+      ev.type2.toLowerCase().trim()===type1.toLowerCase().trim()
+    );
+    console.log('=== GRADES DEBUG ===');
+    console.log('type1:', type1);
+    console.log('Matching events:', matching.length);
+    matching.forEach(ev=>console.log(' -', ev.event, '| date:', ev.date, '| fuzzy:', ev.fuzzy, '| isPeriod:', ev.isPeriod, '| dateEnd:', ev.dateEnd));
+  }
   const col=getColor(type1);
   const today=new Date(); today.setHours(0,0,0,0);
 
@@ -623,6 +634,11 @@ async function init(){
     });
 
     // Show intro screen by default — no category pre-selected
+    // Debug: log all Grades events
+    const gradesEvs = allEvents.filter(e => e.type1.toLowerCase().includes('grade') || e.type2.toLowerCase().includes('grade'));
+    console.log('Grades events found:', gradesEvs.length, gradesEvs.map(e=>e.event+' | date:'+e.date+' | fuzzy:'+e.fuzzy+' | isPeriod:'+e.isPeriod));
+    console.log('Total allEvents:', allEvents.length);
+
     loading.style.display='none';
     app.style.display='block';
     document.getElementById('board-intro').style.display='block';
