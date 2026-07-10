@@ -264,7 +264,11 @@
   <div id="error-msg"></div>
   <div id="app" style="display:none">
     <div class="cat-tabs" id="cat-tabs"></div>
-    <div id="board"></div>
+    <div id="board-intro" style="display:none;padding:2rem 1.5rem;background:var(--white);border-radius:14px;border:1.5px solid var(--border);border-left:4px solid var(--orange);margin-bottom:0.5rem;">
+  <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--orange);margin-bottom:0.5rem;">About This Page</p>
+  <p style="font-size:0.88rem;font-weight:500;color:var(--text-mid);line-height:1.75;">This area lists important dates on the BGSU and Thompson calendar outside of the typical Thompson Events for you to be aware of. Select a category above to explore dates, and click any card for additional information.</p>
+</div>
+<div id="board"></div>
   </div>
 </main>
 
@@ -363,7 +367,7 @@ function buildCard(ev, col){
   let monStr='–',dayStr='–',dowStr='',dayEndStr='';
   if(d){
     if(ev.fuzzy==='month'){ monStr=MON[d.getMonth()]; dayStr='–'; }
-    else if(ev.fuzzy==='semester'){ monStr=(ev.semLabel||'SEM').toUpperCase().slice(0,3); dayStr='–'; }
+    else if(ev.fuzzy==='semester'){ monStr=(ev.semLabel?({'fall':'FA','spring':'SP','summer':'SU'}[ev.semLabel.toLowerCase()]||ev.semLabel.toUpperCase().slice(0,2)):'TBD'); dayStr='–'; }
     else if(ev.isPeriod&&ev.dateEnd){
       const same=d.getMonth()===ev.dateEnd.getMonth()&&d.getFullYear()===ev.dateEnd.getFullYear();
       monStr=MON[d.getMonth()]; dayStr=d.getDate();
@@ -488,11 +492,14 @@ function renderBoard(type1, subFilter){
     const subOrder=[];
     const subMap=new Map();
     dated.forEach(ev=>{
-      // Determine which sub label to use for this card under type1
+      // Only show the sub that belongs to THIS type1 match
       let subLabel='';
-      if(ev.type1.toLowerCase().trim()===type1.toLowerCase().trim()) subLabel=ev.sub1||'';
-      else if(ev.type2.toLowerCase().trim()===type1.toLowerCase().trim()) subLabel=ev.sub2||'';
-      // If sub matches type1 name, treat as no sub (general)
+      if(ev.type1.toLowerCase().trim()===type1.toLowerCase().trim()){
+        subLabel=ev.sub1||'';
+      } else if(ev.type2.toLowerCase().trim()===type1.toLowerCase().trim()){
+        subLabel=ev.sub2||'';
+      }
+      // If sub matches type1 name exactly, treat as no sub (general)
       if(subLabel.toLowerCase().trim()===type1.toLowerCase().trim()) subLabel='';
       if(!subMap.has(subLabel)){ subMap.set(subLabel,[]); subOrder.push(subLabel); }
       subMap.get(subLabel).push(ev);
@@ -609,24 +616,16 @@ async function init(){
         btn.style.background=col.dot;
         btn.style.borderColor=col.dot;
         activeType1=type1; activeSubFilter=null;
+        document.getElementById('board-intro').style.display='none';
         renderBoard(type1,null);
       });
       catTabs.appendChild(btn);
     });
 
-    // Show first category by default
-    if(firstType){
-      const first=catTabs.querySelector('.cat-tab');
-      const col=getColor(firstType);
-      first.classList.add('active');
-      first.style.background=col.dot;
-      first.style.borderColor=col.dot;
-      first.style.color='white';
-      renderBoard(firstType,null);
-    }
-
+    // Show intro screen by default — no category pre-selected
     loading.style.display='none';
     app.style.display='block';
+    document.getElementById('board-intro').style.display='block';
 
   } catch(err){
     loading.style.display='none';
