@@ -465,23 +465,56 @@ function renderBoard(type1, subFilter){
   const upcoming=events.filter(e=>e.fuzzy!=='tbd'&&(!e.date||e.date>=today)).sort((a,b)=>(!a.date?1:!b.date?-1:a.date-b.date));
   const past=events.filter(e=>e.fuzzy!=='tbd'&&e.date&&e.date<today).sort((a,b)=>b.date-a.date);
 
-  // Group upcoming by semester
-  const SEM_LABELS={0:'Spring',1:'Spring',2:'Spring',3:'Spring',4:'Spring',
-                    5:'Summer',6:'Summer',7:'Summer',
-                    8:'Fall',9:'Fall',10:'Fall',11:'Fall'};
-  const semOrder=[], semMap=new Map();
-
+  // Assign semester key based on date ranges
+  // Fall: Aug 23 – Dec 31, Spring: Jan 1 – May 1, Summer: May 2 – Aug 22
   function getSemKey(ev){
-    if(ev.fuzzy==='semester') return (ev.semLabel||'Other')+' '+(ev.date?ev.date.getFullYear():'');
-    if(ev.date){ const m=ev.date.getMonth(); return SEM_LABELS[m]+' '+ev.date.getFullYear(); }
-    return 'Other';
+    // Semester-fuzzy events: use their semLabel + year
+    if(ev.fuzzy==='semester'){
+      const yr=ev.date?ev.date.getFullYear():'';
+      return (ev.semLabel||'Other').charAt(0).toUpperCase()+(ev.semLabel||'Other').slice(1)+' '+yr+'__SEM';
+    }
+    if(!ev.date) return 'Other__OTHER';
+    const d=ev.date;
+    const yr=d.getFullYear();
+    const mo=d.getMonth(); // 0-based
+    const day=d.getDate();
+    // Fall: Aug 23 (mo=7, day>=23) through Dec 31 (mo=11)
+    if((mo===7&&day>=23)||mo===8||mo===9||mo===10||mo===11)
+      return `Fall ${yr}__FALL_${yr}`;
+    // Spring: Jan 1 (mo=0) through May 1 (mo=4, day<=1)
+    if(mo===0||mo===1||mo===2||mo===3||(mo===4&&day<=1))
+      return `Spring ${yr}__SPR_${yr}`;
+    // Summer: May 2 through Aug 22
+    return `Summer ${yr}__SUM_${yr}`;
   }
 
+  // Sort semester keys chronologically
+  function semSortVal(key){
+    const parts=key.split('__');
+    const tag=parts[1]||'';
+    if(tag==='OTHER') return 99999;
+    if(tag.startsWith('SEM')){
+      // semester-fuzzy: sort by semLabel order (Fall first in year, then Spring, Summer)
+      const label=(parts[0]||'').toLowerCase();
+      const yr=parseInt(parts[0].split(' ').pop())||0;
+      const mo=label.startsWith('fall')?7:label.startsWith('summer')?4:0;
+      return yr*100+mo;
+    }
+    if(tag.startsWith('FALL_'))  return parseInt(tag.split('_')[1])*100+7;
+    if(tag.startsWith('SPR_'))   return parseInt(tag.split('_')[1])*100+0;
+    if(tag.startsWith('SUM_'))   return parseInt(tag.split('_')[1])*100+4;
+    return 99998;
+  }
+
+  const semMap=new Map();
   upcoming.forEach(ev=>{
     const key=getSemKey(ev);
-    if(!semMap.has(key)){semMap.set(key,{isTBD:ev.fuzzy==='semester',events:[]});semOrder.push(key);}
+    if(!semMap.has(key))semMap.set(key,{label:key.split('__')[0],isTBD:key.endsWith('__SEM'),events:[]});
     semMap.get(key).events.push(ev);
   });
+
+  // Sort semester keys chronologically
+  const semOrder=Array.from(semMap.keys()).sort((a,b)=>semSortVal(a)-semSortVal(b));
 
   // Build board
   board.innerHTML=`
@@ -498,28 +531,30 @@ function renderBoard(type1, subFilter){
   semOrder.forEach(semKey=>{
     const sg=semMap.get(semKey);
 
-    // Semester header (brown bar)
+    // Skip TBD semester groups entirely (no "Fall 2026 Dates TBD" headers)
+    if(sg.isTBD) return;
+
     const semSec=document.createElement('div');
     semSec.style.marginBottom='1.5rem';
 
+    // Brown semester header — closed by default
     const semHdr=document.createElement('div');
-    semHdr.style.cssText=`display:flex;align-items:center;gap:10px;padding:0.6rem 1rem;background:var(--brown);border-radius:10px;cursor:pointer;user-select:none;margin-bottom:0.85rem;`;
+    semHdr.style.cssText=`display:flex;align-items:center;gap:10px;padding:0.6rem 1rem;background:var(--brown);border-radius:10px;cursor:pointer;user-select:none;margin-bottom:0;`;
     semHdr.innerHTML=`
-      <span style="font-size:0.7rem;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:white;flex:1">
-        ${sg.isTBD?'📅 ':''}${semKey}${sg.isTBD?' — Dates TBD':''}
-      </span>
+      <span style="font-size:0.7rem;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:white;flex:1">${sg.label}</span>
       <span style="font-size:0.6rem;color:rgba(255,255,255,0.6);font-weight:600;">${sg.events.length} date${sg.events.length!==1?'s':''}</span>
-      <span style="color:rgba(255,255,255,0.7);font-size:0.7rem;transition:transform 0.2s;" class="sem-chev-i">▾</span>
+      <span style="color:rgba(255,255,255,0.7);font-size:0.7rem;transition:transform 0.2s;transform:rotate(-90deg);" class="sem-chev-i">▾</span>
     `;
 
     const semBody=document.createElement('div');
+    semBody.style.cssText='display:none;padding-top:0.85rem;';
 
-    // Sub-group events within this semester
+    // Sub-group within this semester
     const subOrder2=[], subMap2=new Map();
     sg.events.forEach(ev=>{
       let sub='';
-      if(ev.type1.toLowerCase().trim()===type1.toLowerCase().trim()) sub=ev.sub1||''
-      else if(ev.type2.toLowerCase().trim()===type1.toLowerCase().trim()) sub=ev.sub2||''
+      if(ev.type1.toLowerCase().trim()===type1.toLowerCase().trim()) sub=ev.sub1||'';
+      else if(ev.type2.toLowerCase().trim()===type1.toLowerCase().trim()) sub=ev.sub2||'';
       if(sub.toLowerCase().trim()===type1.toLowerCase().trim()) sub='';
       if(!subMap2.has(sub)){subMap2.set(sub,[]);subOrder2.push(sub);}
       subMap2.get(sub).push(ev);
@@ -540,7 +575,7 @@ function renderBoard(type1, subFilter){
         grid.style.marginBottom='0.5rem';
         subMap2.get(sub).forEach(ev=>grid.appendChild(buildCard(ev,col)));
         let o=true;
-        subHdr.addEventListener('click',()=>{o=!o;grid.style.display=o?'grid':'none';subHdr.querySelector('.sc2').style.transform=o?'':' rotate(-90deg)';});
+        subHdr.addEventListener('click',()=>{o=!o;grid.style.display=o?'grid':'none';subHdr.querySelector('.sc2').style.transform=o?'':'rotate(-90deg)';});
         semBody.appendChild(subHdr);
         semBody.appendChild(grid);
       } else {
@@ -552,11 +587,12 @@ function renderBoard(type1, subFilter){
       }
     });
 
-    let semOpen=true;
+    // Toggle semester — closed by default
+    let semOpen=false;
     semHdr.addEventListener('click',()=>{
       semOpen=!semOpen;
       semBody.style.display=semOpen?'block':'none';
-      semHdr.querySelector('.sem-chev-i').style.transform=semOpen?'':' rotate(-90deg)';
+      semHdr.querySelector('.sem-chev-i').style.transform=semOpen?'rotate(0deg)':'rotate(-90deg)';
     });
 
     semSec.appendChild(semHdr);
