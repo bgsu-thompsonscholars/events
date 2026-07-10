@@ -320,8 +320,12 @@ function parseSingle(raw){
   if(/^tbd$/i.test(s)) return{date:null,fuzzy:'tbd'};
   let d=new Date(s);
   if(!isNaN(d))return{date:d,fuzzy:false};
-  const p=s.split(/[\/-]/);
+  // M/D/YY — split only on / to avoid issues with hyphens
+  const p=s.split('/');
   if(p.length>=3){let y=p[2].trim();if(y.length===2)y='20'+y;d=new Date(`${y}-${p[0].trim().padStart(2,'0')}-${p[1].trim().padStart(2,'0')}`);if(!isNaN(d))return{date:d,fuzzy:false};}
+  // M-D-YY fallback
+  const p2=s.split('-');
+  if(p2.length>=3){let y=p2[2].trim();if(y.length===2)y='20'+y;d=new Date(`${y}-${p2[0].trim().padStart(2,'0')}-${p2[1].trim().padStart(2,'0')}`);if(!isNaN(d))return{date:d,fuzzy:false};}
   return{date:null,fuzzy:'tbd'};
 }
 
@@ -472,7 +476,7 @@ function renderBoard(type1, subFilter){
     const sec=document.createElement('div');
     sec.className='sem-section';
     sec.innerHTML=`<div class="sem-header">📅 ${sg.label} <span class="sem-chevron">▾</span></div><div class="sem-body"></div>`;
-    sec.querySelector('.sem-header').addEventListener('click',()=>sec.classList.toggle('open'));
+    sec.classList.add('open'); sec.querySelector('.sem-header').addEventListener('click',()=>sec.classList.toggle('open'));
     const body=sec.querySelector('.sem-body');
     sg.events.forEach(ev=>body.appendChild(buildCard(ev,col)));
     board.appendChild(sec);
@@ -495,14 +499,22 @@ function renderBoard(type1, subFilter){
     });
 
     subOrder.forEach((subLabel,idx)=>{
-      // Add sub-section divider (skip if only one group and no label)
-      if(subLabel||(subOrder.length>1)){
+      // Sub-section header — prominent, colored band
+      if(subOrder.length>1||subLabel){
         const divider=document.createElement('div');
-        divider.className='sub-section-divider';
-        divider.style.cssText=`display:flex;align-items:center;gap:10px;margin:${idx===0?'0':'1.5rem'} 0 0.75rem;font-size:0.58rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${col.text};`;
-        divider.innerHTML=subLabel
-          ? `<span style="background:${col.bg};border:1.5px solid ${col.border};color:${col.text};padding:3px 10px;border-radius:20px;">${subLabel}</span><span style="flex:1;height:1.5px;background:linear-gradient(to right,${col.border},transparent);border-radius:2px;display:block;"></span>`
-          : `<span style="color:var(--text-muted)">General</span><span style="flex:1;height:1px;background:var(--border);display:block;"></span>`;
+        divider.style.cssText=`
+          margin:${idx===0?'0.5rem':'2rem'} 0 0.85rem;
+          padding:0.6rem 1rem;
+          background:${col.bg};
+          border-left:4px solid ${col.dot};
+          border-radius:0 8px 8px 0;
+          display:flex;align-items:center;gap:10px;
+        `;
+        divider.innerHTML=`
+          <span style="font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${col.dot};">${subLabel||'General'}</span>
+          <span style="flex:1;height:1.5px;background:${col.border};opacity:0.5;border-radius:2px;display:block;"></span>
+          <span style="font-size:0.6rem;font-weight:700;color:${col.text};opacity:0.7;">${subMap.get(subLabel).length} date${subMap.get(subLabel).length!==1?'s':''}</span>
+        `;
         board.appendChild(divider);
       }
       const grid=document.createElement('div');
