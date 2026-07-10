@@ -575,7 +575,7 @@ function renderBoard(type1, subFilter){
         grid.style.marginBottom='0.5rem';
         subMap2.get(sub).forEach(ev=>grid.appendChild(buildCard(ev,col)));
         let o=true;
-        subHdr.addEventListener('click',()=>{o=!o;grid.style.display=o?'grid':'none';subHdr.querySelector('.sc2').style.transform=o?'':'rotate(-90deg)';});
+        subHdr.addEventListener('click',(e)=>{e.stopPropagation();o=!o;grid.style.display=o?'grid':'none';subHdr.querySelector('.sc2').style.transform=o?'':'rotate(-90deg)';});
         semBody.appendChild(subHdr);
         semBody.appendChild(grid);
       } else {
