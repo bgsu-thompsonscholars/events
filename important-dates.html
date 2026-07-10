@@ -421,17 +421,7 @@ let allEvents=[], activeType1=null, activeSubFilter=null;
 
 function renderBoard(type1, subFilter){
   const board=document.getElementById('board');
-  // Debug logging
-  if(type1.toLowerCase().includes('grade')){
-    const matching = allEvents.filter(ev=>
-      ev.type1.toLowerCase().trim()===type1.toLowerCase().trim() ||
-      ev.type2.toLowerCase().trim()===type1.toLowerCase().trim()
-    );
-    console.log('=== GRADES DEBUG ===');
-    console.log('type1:', type1);
-    console.log('Matching events:', matching.length);
-    matching.forEach(ev=>console.log(' -', ev.event, '| date:', ev.date, '| fuzzy:', ev.fuzzy, '| isPeriod:', ev.isPeriod, '| dateEnd:', ev.dateEnd));
-  }
+
   const col=getColor(type1);
   const today=new Date(); today.setHours(0,0,0,0);
 
@@ -517,28 +507,51 @@ function renderBoard(type1, subFilter){
     });
 
     subOrder.forEach((subLabel,idx)=>{
-      // Sub-section header — prominent, colored band
       if(subOrder.length>1||subLabel){
-        const divider=document.createElement('div');
-        divider.style.cssText=`
-          margin:${idx===0?'0.5rem':'2rem'} 0 0.85rem;
-          padding:0.6rem 1rem;
-          background:${col.bg};
-          border-left:4px solid ${col.dot};
-          border-radius:0 8px 8px 0;
+        // Accordion wrapper
+        const section=document.createElement('div');
+        section.style.cssText=`margin:${idx===0?'0.5rem':'1.5rem'} 0 0;`;
+
+        // Header — solid background in category color
+        const hdr=document.createElement('div');
+        hdr.style.cssText=`
           display:flex;align-items:center;gap:10px;
+          padding:0.65rem 1rem;
+          background:${col.dot};
+          border-radius:10px;
+          cursor:pointer;user-select:none;
+          margin-bottom:0.75rem;
         `;
-        divider.innerHTML=`
-          <span style="font-size:0.72rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${col.dot};">${subLabel||'General'}</span>
-          <span style="flex:1;height:1.5px;background:${col.border};opacity:0.5;border-radius:2px;display:block;"></span>
-          <span style="font-size:0.6rem;font-weight:700;color:${col.text};opacity:0.7;">${subMap.get(subLabel).length} date${subMap.get(subLabel).length!==1?'s':''}</span>
+        const count=subMap.get(subLabel).length;
+        hdr.innerHTML=`
+          <span style="font-size:0.72rem;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:white;flex:1">${subLabel||'General'}</span>
+          <span style="font-size:0.62rem;font-weight:700;color:rgba(255,255,255,0.75);background:rgba(0,0,0,0.15);padding:2px 8px;border-radius:12px;">${count} date${count!==1?'s':''}</span>
+          <span style="color:rgba(255,255,255,0.8);font-size:0.7rem;transition:transform 0.2s;" class="sub-chev">▾</span>
         `;
-        board.appendChild(divider);
+
+        const grid=document.createElement('div');
+        grid.className='card-grid';
+        grid.style.marginBottom='0.5rem';
+        subMap.get(subLabel).forEach(ev=>grid.appendChild(buildCard(ev,col)));
+
+        // Toggle open/closed — open by default
+        let isOpen=true;
+        hdr.addEventListener('click',()=>{
+          isOpen=!isOpen;
+          grid.style.display=isOpen?'grid':'none';
+          hdr.querySelector('.sub-chev').style.transform=isOpen?'':'rotate(-90deg)';
+        });
+
+        section.appendChild(hdr);
+        section.appendChild(grid);
+        board.appendChild(section);
+      } else {
+        // Only one group and no label — just show grid
+        const grid=document.createElement('div');
+        grid.className='card-grid';
+        subMap.get(subLabel).forEach(ev=>grid.appendChild(buildCard(ev,col)));
+        board.appendChild(grid);
       }
-      const grid=document.createElement('div');
-      grid.className='card-grid';
-      subMap.get(subLabel).forEach(ev=>grid.appendChild(buildCard(ev,col)));
-      board.appendChild(grid);
     });
   }
 
@@ -574,7 +587,9 @@ async function init(){
 
     allEvents=[];
     rows.forEach(r=>{
-      if(get(r,'Include','include','INCLUDE').toLowerCase()!=='yes') return;
+      const inc = get(r,'Include','include','INCLUDE').toLowerCase().trim();
+      // Only exclude if explicitly set to 'no' — blank or missing = include
+      if(inc==='no') return;
       const event=get(r,'Event','event');
       if(!event) return;
       const dateEntries=parseDateField(get(r,'Date','date'));
@@ -634,11 +649,6 @@ async function init(){
     });
 
     // Show intro screen by default — no category pre-selected
-    // Debug: log all Grades events
-    const gradesEvs = allEvents.filter(e => e.type1.toLowerCase().includes('grade') || e.type2.toLowerCase().includes('grade'));
-    console.log('Grades events found:', gradesEvs.length, gradesEvs.map(e=>e.event+' | date:'+e.date+' | fuzzy:'+e.fuzzy+' | isPeriod:'+e.isPeriod));
-    console.log('Total allEvents:', allEvents.length);
-
     loading.style.display='none';
     app.style.display='block';
     document.getElementById('board-intro').style.display='block';
