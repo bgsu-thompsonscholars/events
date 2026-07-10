@@ -28,106 +28,215 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Montserrat', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
+  /* ── HEADER ── */
   .header-bar { height: 5px; background: var(--orange); }
   header { background: var(--brown); padding: 3.25rem 2rem 1.6rem; }
   .header-inner { max-width: 1060px; margin: 0 auto; display: flex; align-items: center; gap: 1.25rem; }
   .header-logo { width: 105px; height: 105px; flex-shrink: 0; border-radius: 50%; }
   .header-text h1 { font-family: 'BrittanySignature', cursive; font-size: 3.75rem; font-weight: 400; color: var(--white); line-height: 1; }
-  .header-eyebrow { font-family: 'Montserrat', sans-serif; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--orange); margin-top: 26px; }
+  .header-eyebrow { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--orange); margin-top: 26px; }
 
-  /* NAV */
+  /* ── NAV ── */
   .page-nav { background: var(--brown-light); border-bottom: 2px solid var(--orange); }
   .page-nav-inner { max-width: 1060px; margin: 0 auto; display: flex; }
-  .nav-link { font-family: 'Montserrat', sans-serif; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.7rem 1.4rem; text-decoration: none; color: var(--tan); border-bottom: 3px solid transparent; transition: color 0.15s, border-color 0.15s; margin-bottom: -2px; }
+  .nav-link { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.7rem 1.4rem; text-decoration: none; color: var(--tan); border-bottom: 3px solid transparent; transition: color 0.15s, border-color 0.15s; margin-bottom: -2px; }
   .nav-link:hover { color: var(--white); }
   .nav-link.active { color: var(--white); border-bottom-color: var(--orange); }
 
-  /* LAYOUT */
-  main { max-width: 1060px; margin: 0 auto; padding: 2.5rem 2rem 5rem; display: flex; gap: 1.75rem; align-items: flex-start; }
-  .dates-column { flex: 1; min-width: 0; }
+  /* ── MAIN ── */
+  main { max-width: 1060px; margin: 0 auto; padding: 2rem 2rem 5rem; }
 
-  /* SIDEBAR */
-  .filter-sidebar { width: 170px; flex-shrink: 0; position: sticky; top: 1.5rem; }
-  .filter-label { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.6rem; display: block; }
+  #loading, #error-msg {
+    text-align: center; padding: 5rem 2rem;
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted);
+  }
+  #error-msg { color: var(--orange); display: none; }
 
-  .filter-btn-all { display: flex; align-items: center; gap: 7px; width: 100%; font-family: 'Montserrat', sans-serif; font-size: 0.67rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.45rem 0.75rem; border-radius: 8px; border: 1.5px solid var(--border); background: var(--white); color: var(--text-muted); cursor: pointer; text-align: left; margin-bottom: 0.75rem; transition: all 0.15s; }
-  .filter-btn-all:hover { border-color: var(--orange); color: var(--orange); }
-  .filter-btn-all.active { background: var(--orange); border-color: var(--orange); color: white; }
-
-  .filter-group { margin-bottom: 0.3rem; }
-
-  .filter-group-btn { display: flex; align-items: center; width: 100%; font-family: 'Montserrat', sans-serif; font-size: 0.67rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.45rem 0.75rem; border-radius: 8px; border: 1.5px solid var(--border); background: var(--white); color: var(--text-mid); cursor: pointer; text-align: left; transition: all 0.15s; gap: 6px; }
-  .filter-group-btn:hover { border-color: var(--orange); color: var(--orange); }
-  .filter-group-btn.active { color: white; }
-  .filter-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-  .filter-chevron { margin-left: auto; font-size: 0.6rem; transition: transform 0.2s; color: var(--text-muted); padding-left: 4px; flex-shrink: 0; }
-  .filter-group-btn.open .filter-chevron { transform: rotate(180deg); }
-
-  .filter-sub-list { display: none; padding: 0.25rem 0 0.1rem 1rem; }
-  .filter-group.expanded .filter-sub-list { display: block; }
-
-  .filter-sub-btn { display: flex; align-items: center; gap: 5px; width: 100%; font-family: 'Montserrat', sans-serif; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; padding: 0.3rem 0.6rem; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--text-muted); cursor: pointer; text-align: left; margin-bottom: 0.15rem; transition: all 0.15s; }
-  .filter-sub-btn:hover { background: var(--tan); color: var(--text-mid); }
-  .filter-sub-btn.active { color: white; }
-  .filter-sub-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-
-  @media (max-width: 640px) {
-    main { flex-direction: column; }
-    .filter-sidebar { width: 100%; position: static; }
+  /* ── CATEGORY TABS ── */
+  .cat-tabs {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin-bottom: 2rem;
   }
 
-  /* SECTION / DIVIDERS */
-  .section-label { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: var(--orange); display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; }
-  .section-label::after { content: ''; flex: 1; height: 1.5px; background: linear-gradient(to right, var(--orange-mid), transparent); border-radius: 2px; }
+  .cat-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 0.55rem 1.1rem; border-radius: 30px;
+    border: 2px solid var(--border); background: var(--white);
+    color: var(--text-mid); cursor: pointer;
+    transition: all 0.18s; white-space: nowrap;
+  }
 
-  .month-divider { display: flex; align-items: center; gap: 10px; margin: 1.25rem 0 0.75rem; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brown); }
-  .month-divider:first-child { margin-top: 0; }
-  .month-divider::after { content: ''; flex: 1; height: 1.5px; background: linear-gradient(to right, var(--tan), transparent); border-radius: 2px; }
+  .cat-tab:hover { transform: translateY(-2px); box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
 
-  /* SEMESTER ACCORDION */
-  .sem-accordion { margin: 1.25rem 0 0.5rem; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
-  .sem-accordion:first-child { margin-top: 0; }
-  .sem-accordion-header { display: flex; align-items: center; gap: 10px; padding: 0.65rem 1rem; background: var(--tan); cursor: pointer; user-select: none; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--brown); transition: background 0.15s; }
-  .sem-accordion-header:hover { background: #ddd4c8; }
-  .sem-chevron { margin-left: auto; font-size: 0.7rem; transition: transform 0.2s; color: var(--text-muted); }
-  .sem-accordion.open .sem-chevron { transform: rotate(180deg); }
-  .sem-accordion-body { display: none; padding: 0.6rem; background: var(--bg); flex-direction: column; gap: 0.5rem; }
-  .sem-accordion.open .sem-accordion-body { display: flex; }
+  .cat-tab.active {
+    color: white; border-color: transparent;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  }
 
-  /* DATE CARD */
-  .dates-list { display: flex; flex-direction: column; gap: 0.55rem; }
-  .date-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; display: flex; align-items: flex-start; gap: 1rem; padding: 0.9rem 1.2rem; transition: box-shadow 0.16s; }
-  .date-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
-  .date-card.past { opacity: 0.55; }
+  .cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+  .cat-count { font-size: 0.6rem; font-weight: 800; background: rgba(255,255,255,0.25); padding: 1px 6px; border-radius: 10px; }
+  .cat-tab:not(.active) .cat-count { background: var(--tan); color: var(--text-muted); }
 
-  .date-badge { min-width: 54px; text-align: center; border: 1.5px solid var(--border); border-radius: 9px; padding: 0.4rem 0.45rem; flex-shrink: 0; }
-  .date-badge .mon { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; line-height: 1; }
-  .date-badge .day { font-size: 1.45rem; font-weight: 800; line-height: 1.1; }
-  .date-badge .dow { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); line-height: 1.3; }
-  .date-badge .day-end { font-size: 0.75rem; font-weight: 700; line-height: 1.1; margin-top: -2px; }
+  /* ── BULLETIN BOARD GRID ── */
+  .board-area { display: none; }
+  .board-area.visible { display: block; }
 
-  .date-info { flex: 1; min-width: 0; }
-  .date-title { font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); }
+  .board-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 1.5rem; padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border);
+  }
 
-  .date-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-  .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.03em; padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
-  .chip-time  { background: var(--seafoam-light); color: #2a6b5f; border: 1px solid #aad6ce; }
-  .chip-type1 { font-weight: 700; border-width: 1.5px; }
-  .chip-sub   { font-weight: 500; font-size: 0.6rem; border-width: 1px; opacity: 0.85; }
-  .chip-range { background: var(--seafoam-light); color: #2a6b5f; border: 1px solid #aad6ce; }
+  .board-header-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+  .board-header h2 {
+    font-size: 0.72rem; font-weight: 800;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-mid);
+  }
+
+  .board-header .sub-tabs {
+    display: flex; flex-wrap: wrap; gap: 0.4rem;
+    margin-left: auto;
+  }
+
+  .sub-tab {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+    padding: 0.3rem 0.75rem; border-radius: 20px;
+    border: 1.5px solid var(--border); background: var(--white);
+    color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+  }
+
+  .sub-tab:hover { border-color: currentColor; }
+  .sub-tab.active { color: white; border-color: transparent; }
+
+  /* ── CARD GRID ── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  /* ── DATE CARD ── */
+  .date-card {
+    background: var(--white);
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    border-top: 4px solid var(--border);
+    padding: 1.1rem 1.1rem 1rem;
+    display: flex; flex-direction: column; gap: 0.6rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .date-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.09);
+  }
+
+  .date-card.past { opacity: 0.5; }
+  .date-card.past:hover { opacity: 0.7; }
+
+  .card-date-row {
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+
+  .card-date-badge {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 44px; padding: 0.3rem 0.4rem;
+    border-radius: 8px; border: 1.5px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .card-date-badge .mon { font-size: 0.55rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; line-height: 1; }
+  .card-date-badge .day { font-size: 1.3rem; font-weight: 800; line-height: 1.1; }
+  .card-date-badge .dow { font-size: 0.5rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); line-height: 1.3; }
+  .card-date-badge .day-end { font-size: 0.65rem; font-weight: 700; line-height: 1; margin-top: -1px; }
+
+  .card-title {
+    font-size: 0.82rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text); line-height: 1.3; flex: 1;
+  }
+
+  .card-meta {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 5px;
+  }
+
+  .chip { display: inline-flex; align-items: center; gap: 3px; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.03em; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+  .chip-time { background: var(--seafoam-light); color: #2a6b5f; border: 1px solid #aad6ce; }
+  .chip-sub  { border-width: 1px; font-size: 0.58rem; opacity: 0.85; }
   .chip-fuzzy { background: var(--tan); color: var(--text-muted); border: 1px solid var(--border); font-style: italic; }
+  .chip-range { background: var(--seafoam-light); color: #2a6b5f; border: 1px solid #aad6ce; }
 
-  .date-info-text { font-size: 0.75rem; font-weight: 500; color: var(--text-mid); line-height: 1.65; margin-top: 0.5rem; padding-top: 0.45rem; border-top: 1px solid var(--tan); }
+  /* Expandable info */
+  .card-body {
+    display: none;
+    font-size: 0.75rem; font-weight: 500; color: var(--text-mid);
+    line-height: 1.65; padding-top: 0.5rem;
+    border-top: 1px solid var(--tan);
+  }
 
-  .date-link-btn { display: inline-flex; align-items: center; gap: 5px; margin-top: 0.55rem; font-family: 'Montserrat', sans-serif; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 0.38rem 0.85rem; border-radius: 7px; text-decoration: none; border: none; cursor: pointer; transition: opacity 0.15s, transform 0.1s; color: white; }
-  .date-link-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+  .date-card.open .card-body { display: block; }
 
-  .past-label { font-size: 0.58rem; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; gap: 10px; margin: 2.5rem 0 1rem; }
-  .past-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .no-dates { text-align: center; padding: 3rem; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+  .card-link-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 0.55rem;
+    font-size: 0.65rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 0.38rem 0.85rem; border-radius: 7px;
+    text-decoration: none; color: white;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .card-link-btn:hover { opacity: 0.85; transform: translateY(-1px); }
 
-  #loading, #error-msg { flex: 1; text-align: center; padding: 5rem 2rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
-  #error-msg { color: var(--orange); display: none; }
+  .card-chevron {
+    position: absolute; top: 1rem; right: 1rem;
+    font-size: 0.65rem; color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+  .date-card.open .card-chevron { transform: rotate(180deg); }
+  .date-card:not(.has-body) .card-chevron { display: none; }
+
+  /* ── SEMESTER ACCORDION ── */
+  .sem-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .sem-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0.65rem 1rem; border-radius: 10px;
+    background: var(--tan); cursor: pointer; user-select: none;
+    font-size: 0.6rem; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--brown); transition: background 0.15s; margin-bottom: 0.75rem;
+    border: 1.5px solid var(--border);
+  }
+  .sem-header:hover { background: #ddd4c8; }
+  .sem-header .sem-chevron { margin-left: auto; transition: transform 0.2s; color: var(--text-muted); }
+  .sem-section.open .sem-header .sem-chevron { transform: rotate(180deg); }
+  .sem-body { display: none; }
+  .sem-section.open .sem-body { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+
+  /* ── PAST SECTION ── */
+  .past-toggle {
+    display: flex; align-items: center; gap: 10px;
+    margin: 2rem 0 0.75rem; font-size: 0.58rem; font-weight: 800;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted);
+    cursor: pointer; user-select: none;
+  }
+  .past-toggle::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .past-grid { display: none; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-top: 0.75rem; }
+  .past-grid.open { display: grid; }
+
+  @media (max-width: 600px) {
+    .card-grid, .sem-body, .past-grid { grid-template-columns: 1fr; }
+    .board-header { flex-wrap: wrap; }
+    .board-header .sub-tabs { margin-left: 0; margin-top: 0.5rem; }
+  }
 </style>
 </head>
 <body>
@@ -153,20 +262,9 @@
 <main>
   <div id="loading">Loading dates…</div>
   <div id="error-msg"></div>
-
-  <aside class="filter-sidebar" id="filter-sidebar" style="display:none">
-    <span class="filter-label">Filter by Type</span>
-    <button class="filter-btn-all active" onclick="setActiveFilter(null,null,this)">All Dates</button>
-    <div id="filter-buttons"></div>
-  </aside>
-
-  <div class="dates-column" id="dates-container" style="display:none">
-    <p class="section-label">Upcoming Dates</p>
-    <div id="upcoming-list" class="dates-list"></div>
-    <div id="past-section" style="display:none">
-      <p class="past-label">Past Dates</p>
-      <div id="past-list" class="dates-list"></div>
-    </div>
+  <div id="app" style="display:none">
+    <div class="cat-tabs" id="cat-tabs"></div>
+    <div id="board"></div>
   </div>
 </main>
 
@@ -176,9 +274,8 @@ const CSV_URL  = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?form
 const MON  = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const DOW  = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-const SEM_MONTH = { fall: 7, spring: 0, summer: 4 };
+const SEM_MONTH = { fall:7, spring:0, summer:4 };
 
-// ── COLOR MAP by Type1 ──
 const TYPE_COLORS = {
   'campus event':        { bg:'#e8f4f1', border:'#80baac', text:'#1c626d', dot:'#1c626d' },
   'class schedule':      { bg:'#e6f1fb', border:'#a0c8f0', text:'#185fa5', dot:'#185fa5' },
@@ -191,18 +288,14 @@ const TYPE_COLORS = {
   'thompson leadership': { bg:'#fdeaea', border:'#f5a8a8', text:'#a82020', dot:'#a82020' },
 };
 const DEFAULT_COLOR = { bg:'#f0ede8', border:'#ddd4c8', text:'#4f2c1d', dot:'#9a7c6e' };
-
-function getColor(type) {
-  if (!type) return DEFAULT_COLOR;
-  return TYPE_COLORS[type.toLowerCase().trim()] || DEFAULT_COLOR;
-}
+function getColor(t) { return t ? (TYPE_COLORS[t.toLowerCase().trim()]||DEFAULT_COLOR) : DEFAULT_COLOR; }
 
 // ── CSV ──
 function parseCSV(text) {
   const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
-  return lines.slice(1).map(line => {
-    const cols=[]; let cur='', inQ=false;
+  const headers = lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+  return lines.slice(1).map(line=>{
+    const cols=[]; let cur='',inQ=false;
     for(let i=0;i<line.length;i++){
       if(line[i]==='"'){inQ=!inQ;}
       else if(line[i]===','&&!inQ){cols.push(cur);cur='';}
@@ -214,28 +307,19 @@ function parseCSV(text) {
     return obj;
   }).filter(r=>Object.values(r).some(v=>v.trim()));
 }
-
-function get(row,...keys){
-  for(const k of keys){const v=row[k.toLowerCase()];if(v&&v.trim())return v.trim();}
-  return '';
-}
+function get(row,...keys){ for(const k of keys){const v=row[k.toLowerCase()];if(v&&v.trim())return v.trim();} return ''; }
 
 // ── DATE PARSING ──
-function parseSingle(raw) {
+function parseSingle(raw){
   if(!raw) return null;
-  const s = raw.trim().replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\s*/i,'');
-  // Month YYYY
-  const mY = s.match(/^([A-Za-z]+)\s+(\d{4})$/);
-  if(mY){ const d=new Date(`${mY[1]} 1, ${mY[2]}`); if(!isNaN(d))return{date:d,fuzzy:'month'}; }
-  // Sem YYYY
-  const sY = s.match(/^(fall|spring|summer)\s+(\d{4})$/i);
-  if(sY){ const mo=SEM_MONTH[sY[1].toLowerCase()]||0; return{date:new Date(parseInt(sY[2]),mo,1),fuzzy:'semester',semLabel:sY[1]}; }
-  // TBD
+  const s=raw.trim().replace(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*,?\s*/i,'');
+  const mY=s.match(/^([A-Za-z]+)\s+(\d{4})$/);
+  if(mY){const d=new Date(`${mY[1]} 1, ${mY[2]}`);if(!isNaN(d))return{date:d,fuzzy:'month'};}
+  const sY=s.match(/^(fall|spring|summer)\s+(\d{4})$/i);
+  if(sY){const mo=SEM_MONTH[sY[1].toLowerCase()]||0;return{date:new Date(parseInt(sY[2]),mo,1),fuzzy:'semester',semLabel:sY[1]};}
   if(/^tbd$/i.test(s)) return{date:null,fuzzy:'tbd'};
-  // Normal
   let d=new Date(s);
   if(!isNaN(d))return{date:d,fuzzy:false};
-  // M/D/YY or M-D-YY
   const p=s.split(/[\/-]/);
   if(p.length>=3){let y=p[2].trim();if(y.length===2)y='20'+y;d=new Date(`${y}-${p[0].trim().padStart(2,'0')}-${p[1].trim().padStart(2,'0')}`);if(!isNaN(d))return{date:d,fuzzy:false};}
   return{date:null,fuzzy:'tbd'};
@@ -245,16 +329,14 @@ function parseDateField(raw){
   if(!raw) return[{date:null,fuzzy:'tbd',isRange:false}];
   const rng=raw.match(/^(.+?)\s*[-–]\s*(.+)$/);
   if(rng){
-    const r1=parseSingle(rng[1]), r2=parseSingle(rng[2]);
+    const r1=parseSingle(rng[1]),r2=parseSingle(rng[2]);
     if(r1&&r1.date&&r2&&r2.date&&r1.date.getTime()!==r2.date.getTime()){
-      const total=Math.round((r2.date-r1.date)/(86400000))+1;
+      const total=Math.round((r2.date-r1.date)/86400000)+1;
       if(total<=3){
-        // Short range: expand to individual cards (e.g. 2-3 day events)
-        const days=[]; const cur=new Date(r1.date); let idx=1;
+        const days=[],cur=new Date(r1.date);let idx=1;
         while(cur<=r2.date){days.push({date:new Date(cur),fuzzy:false,isRange:true,rangeIndex:idx,rangeTotal:total});cur.setDate(cur.getDate()+1);idx++;}
         return days;
       } else {
-        // Long range: single card with dateEnd for display
         return[{date:r1.date,dateEnd:r2.date,fuzzy:false,isRange:false,isPeriod:true}];
       }
     }
@@ -265,271 +347,248 @@ function parseDateField(raw){
 
 // ── ICONS ──
 const iClock=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
-const iTag=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`;
 const iLink=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
+const iChev=`▾`;
 
 // ── BUILD CARD ──
-function buildCard(ev, isPast){
+function buildCard(ev, col){
   const d=ev.date;
-  const col=getColor(ev.type1);
-  const card=document.createElement('div');
-  card.className='date-card'+(isPast?' past':'')+(ev.isRange?' range-card':'');
-  card.style.borderLeft=`4px solid ${col.border}`;
+  const isPast = d && d < new Date(new Date().setHours(0,0,0,0));
+  const hasBody = ev.info || ev.link;
 
-  let monStr='–', dayStr='–', dowStr='', badgeExtra='';
+  let monStr='–',dayStr='–',dowStr='',dayEndStr='';
   if(d){
     if(ev.fuzzy==='month'){ monStr=MON[d.getMonth()]; dayStr='–'; }
     else if(ev.fuzzy==='semester'){ monStr=(ev.semLabel||'SEM').toUpperCase().slice(0,3); dayStr='–'; }
     else if(ev.isPeriod&&ev.dateEnd){
-      // Date range period: show "Oct 7–26" or "Feb 22 – Mar 15"
-      const sameMonth=d.getMonth()===ev.dateEnd.getMonth()&&d.getFullYear()===ev.dateEnd.getFullYear();
-      monStr=MON[d.getMonth()];
-      dayStr=d.getDate();
-      if(sameMonth){ badgeExtra=`<div class="day-end" style="color:${col.text}">–${ev.dateEnd.getDate()}</div>`; }
-      else{ badgeExtra=`<div class="day-end" style="color:${col.text};font-size:0.52rem">${MON[ev.dateEnd.getMonth()]} ${ev.dateEnd.getDate()}</div>`; }
+      const same=d.getMonth()===ev.dateEnd.getMonth()&&d.getFullYear()===ev.dateEnd.getFullYear();
+      monStr=MON[d.getMonth()]; dayStr=d.getDate();
+      dayEndStr=same?`–${ev.dateEnd.getDate()}`:`–${MON[ev.dateEnd.getMonth()]} ${ev.dateEnd.getDate()}`;
     }
     else{ monStr=MON[d.getMonth()]; dayStr=d.getDate(); dowStr=DOW[d.getDay()]; }
   } else { monStr='TBD'; dayStr='–'; }
 
-  // Type chips
-  const t1chip = ev.type1 ? `<span class="chip chip-type1" style="background:${col.bg};border:1.5px solid ${col.border};color:${col.text}">${iTag} ${ev.type1}</span>` : '';
-  const s1chip = ev.sub1 && ev.sub1.toLowerCase().trim()!==ev.type1.toLowerCase().trim()
-    ? `<span class="chip chip-sub" style="background:${col.bg};border:1px solid ${col.border};color:${col.text}">${ev.sub1}</span>` : '';
+  const timeChip = ev.time?`<span class="chip chip-time">${iClock} ${ev.time}</span>`:'';
+  const sub1chip = ev.sub1&&ev.sub1.toLowerCase().trim()!==ev.type1.toLowerCase().trim()
+    ?`<span class="chip chip-sub" style="background:${col.bg};border-color:${col.border};color:${col.text}">${ev.sub1}</span>`:'';
   const col2=getColor(ev.type2);
-  const t2chip = ev.type2 && ev.type2.toLowerCase().trim()!==ev.type1.toLowerCase().trim()
-    ? `<span class="chip chip-type1" style="background:${col2.bg};border:1.5px solid ${col2.border};color:${col2.text}">${iTag} ${ev.type2}</span>` : '';
-  const s2chip = ev.sub2 && ev.type2 && ev.sub2.toLowerCase().trim()!==ev.type2.toLowerCase().trim()
-    ? `<span class="chip chip-sub" style="background:${col2.bg};border:1px solid ${col2.border};color:${col2.text}">${ev.sub2}</span>` : '';
+  const type2chip = ev.type2&&ev.type2.toLowerCase().trim()!==ev.type1.toLowerCase().trim()
+    ?`<span class="chip chip-sub" style="background:${col2.bg};border-color:${col2.border};color:${col2.text}">${ev.type2}</span>`:'';
+  const sub2chip = ev.sub2&&ev.type2&&ev.sub2.toLowerCase().trim()!==ev.type2.toLowerCase().trim()
+    ?`<span class="chip chip-sub" style="background:${col2.bg};border-color:${col2.border};color:${col2.text}">${ev.sub2}</span>`:'';
+  const fuzzyChip = ev.fuzzy==='month'?`<span class="chip chip-fuzzy">Exact date TBD</span>`
+    :ev.fuzzy==='semester'?`<span class="chip chip-fuzzy">${ev.semLabel} — date TBD</span>`:'';
+  const rangeChip = ev.isRange?`<span class="chip chip-range">Day ${ev.rangeIndex} of ${ev.rangeTotal}</span>`:'';
 
-  const rangeChip = ev.isRange ? `<span class="chip chip-range">Day ${ev.rangeIndex} of ${ev.rangeTotal}</span>` : '';
-  const fuzzyChip = ev.fuzzy==='month' ? `<span class="chip chip-fuzzy">Exact date TBD</span>`
-    : ev.fuzzy==='semester' ? `<span class="chip chip-fuzzy">${ev.semLabel||'Semester'} — date TBD</span>` : '';
+  const linkBtn = ev.link?`<a class="card-link-btn" href="${ev.link}" target="_blank" rel="noopener" style="background:${col.dot}">${iLink} Learn More</a>`:'';
 
-  const linkBtn = ev.link ? `<a class="date-link-btn" href="${ev.link}" target="_blank" rel="noopener" style="background:${col.dot}">${iLink} Learn More</a>` : '';
+  const card=document.createElement('div');
+  card.className='date-card'+(isPast?' past':'')+(hasBody?' has-body':'');
+  card.style.borderTopColor=col.border;
 
   card.innerHTML=`
-    <div class="date-badge" style="background:${col.bg};border-color:${col.border}">
-      <div class="mon" style="color:${col.text}">${monStr}</div>
-      <div class="day" style="color:${col.text}">${dayStr}</div>
-      ${dowStr?`<div class="dow">${dowStr}</div>`:''}
-    </div>
-    <div class="date-info">
-      <div class="date-title">${ev.event||'Date'}</div>
-      <div class="date-chips">
-        ${ev.time?`<span class="chip chip-time">${iClock} ${ev.time}</span>`:''}
-        ${t1chip}${s1chip}${t2chip}${s2chip}${rangeChip}${fuzzyChip}
+    ${hasBody?`<span class="card-chevron">${iChev}</span>`:''}
+    <div class="card-date-row">
+      <div class="card-date-badge" style="background:${col.bg};border-color:${col.border}">
+        <div class="mon" style="color:${col.text}">${monStr}</div>
+        <div class="day" style="color:${col.text}">${dayStr}</div>
+        ${dayEndStr?`<div class="day-end" style="color:${col.text};font-size:${dayEndStr.length>3?'0.52rem':'0.65rem'}">${dayEndStr}</div>`:''}
+        ${dowStr?`<div class="dow">${dowStr}</div>`:''}
       </div>
-      ${ev.info?`<div class="date-info-text">${ev.info}</div>`:''}
-      ${linkBtn}
-    </div>`;
+      <div class="card-title">${ev.event}</div>
+    </div>
+    <div class="card-meta">
+      ${timeChip}${sub1chip}${type2chip}${sub2chip}${fuzzyChip}${rangeChip}
+    </div>
+    ${hasBody?`<div class="card-body">${ev.info?`<p>${ev.info}</p>`:''}${linkBtn}</div>`:''}`;
+
+  if(hasBody){
+    card.addEventListener('click', ()=>card.classList.toggle('open'));
+  }
   return card;
 }
 
-// ── FILTER STATE ──
-let allEvents=[], activeFilter=null;
+// ── RENDER BOARD for a category ──
+let allEvents=[], activeType1=null, activeSubFilter=null;
 
-function clearActive(){
-  document.querySelectorAll('.filter-group-btn,.filter-sub-btn,.filter-btn-all').forEach(b=>b.classList.remove('active'));
-}
-
-function setActiveFilter(type1,sub1,btn){
-  if(activeFilter&&activeFilter.type1===type1&&activeFilter.sub1===sub1){
-    activeFilter=null; clearActive();
-    document.querySelector('.filter-btn-all').classList.add('active');
-  } else {
-    activeFilter={type1,sub1};
-    clearActive();
-    if(btn) btn.classList.add('active');
-  }
-  renderDates();
-}
-
-// ── RENDER ──
-function renderDates(){
-  const upList=document.getElementById('upcoming-list');
-  const pastList=document.getElementById('past-list');
-  const pastSection=document.getElementById('past-section');
+function renderBoard(type1, subFilter){
+  const board=document.getElementById('board');
+  const col=getColor(type1);
   const today=new Date(); today.setHours(0,0,0,0);
 
-  let filtered=allEvents;
-  if(activeFilter&&activeFilter.type1){
-    filtered=allEvents.filter(ev=>{
-      const t1=ev.type1||''; const t2=ev.type2||'';
-      const matchT1=t1.toLowerCase().trim()===activeFilter.type1.toLowerCase().trim()
-                   ||t2.toLowerCase().trim()===activeFilter.type1.toLowerCase().trim();
-      if(!matchT1) return false;
-      if(activeFilter.sub1){
-        const s1=ev.sub1||''; const s2=ev.sub2||'';
-        return s1.toLowerCase().trim()===activeFilter.sub1.toLowerCase().trim()
-              ||s2.toLowerCase().trim()===activeFilter.sub1.toLowerCase().trim();
-      }
-      return true;
+  // Filter events for this type1
+  let events=allEvents.filter(ev=>{
+    const match = ev.type1.toLowerCase().trim()===type1.toLowerCase().trim()
+                ||ev.type2.toLowerCase().trim()===type1.toLowerCase().trim();
+    if(!match) return false;
+    if(subFilter){
+      return ev.sub1.toLowerCase().trim()===subFilter.toLowerCase().trim()
+            ||ev.sub2.toLowerCase().trim()===subFilter.toLowerCase().trim();
+    }
+    return true;
+  });
+
+  // Collect subs for sub-tab bar
+  const subSet=new Set();
+  allEvents.filter(ev=>ev.type1.toLowerCase().trim()===type1.toLowerCase().trim()
+                      ||ev.type2.toLowerCase().trim()===type1.toLowerCase().trim())
+    .forEach(ev=>{
+      if(ev.sub1&&ev.sub1.toLowerCase().trim()!==type1.toLowerCase().trim()) subSet.add(ev.sub1);
+      if(ev.sub2&&ev.sub2.toLowerCase().trim()!==type1.toLowerCase().trim()) subSet.add(ev.sub2);
     });
+
+  // Build sub tabs
+  const subTabsHTML = Array.from(subSet).sort().map(sub=>{
+    const isActive = subFilter===sub;
+    return `<button class="sub-tab${isActive?' active':''}" style="${isActive?`background:${col.dot};border-color:${col.dot}`:''}" onclick="renderBoard('${type1}','${isActive?null:sub}')">${sub}</button>`;
+  }).join('');
+
+  // Split upcoming vs past
+  const upcoming=events.filter(e=>!e.date||e.date>=today).sort((a,b)=>(!a.date?1:!b.date?-1:a.date-b.date));
+  const past=events.filter(e=>e.date&&e.date<today).sort((a,b)=>b.date-a.date);
+
+  // Separate semester-fuzzy from dated upcoming
+  const semGroups={};
+  const dated=[];
+  upcoming.forEach(ev=>{
+    if(ev.fuzzy==='semester'){
+      const key=(ev.semLabel||'Semester')+' '+(ev.date?ev.date.getFullYear():'');
+      if(!semGroups[key])semGroups[key]={label:`${ev.semLabel||'Semester'} ${ev.date?ev.date.getFullYear():''} — Dates TBD`,events:[]};
+      semGroups[key].events.push(ev);
+    } else {
+      dated.push(ev);
+    }
+  });
+
+  board.innerHTML=`
+    <div class="board-header">
+      <div class="board-header-dot" style="background:${col.dot}"></div>
+      <h2>${type1}</h2>
+      ${subTabsHTML?`<div class="sub-tabs">${subTabsHTML}</div>`:''}
+    </div>`;
+
+  // Semester accordions first
+  Object.values(semGroups).forEach(sg=>{
+    const sec=document.createElement('div');
+    sec.className='sem-section';
+    sec.innerHTML=`<div class="sem-header">📅 ${sg.label} <span class="sem-chevron">▾</span></div><div class="sem-body"></div>`;
+    sec.querySelector('.sem-header').addEventListener('click',()=>sec.classList.toggle('open'));
+    const body=sec.querySelector('.sem-body');
+    sg.events.forEach(ev=>body.appendChild(buildCard(ev,col)));
+    board.appendChild(sec);
+  });
+
+  // Dated upcoming grid
+  if(dated.length){
+    const grid=document.createElement('div');
+    grid.className='card-grid';
+    dated.forEach(ev=>grid.appendChild(buildCard(ev,col)));
+    board.appendChild(grid);
   }
 
-  const upcoming=filtered.filter(e=>!e.date||e.date>=today).sort((a,b)=>(!a.date?1:!b.date?-1:a.date-b.date));
-  const past=filtered.filter(e=>e.date&&e.date<today).sort((a,b)=>b.date-a.date);
-
-  upList.innerHTML='';
-  if(!upcoming.length){ upList.innerHTML='<div class="no-dates">No dates for this filter.</div>'; }
-  else{
-    let lastMonthKey=null, semAccordions={};
-    upcoming.forEach(ev=>{
-      if(ev.fuzzy==='semester'){
-        const semKey=(ev.semLabel||'Semester')+' '+(ev.date?ev.date.getFullYear():'');
-        if(!semAccordions[semKey]){
-          const acc=document.createElement('div');
-          acc.className='sem-accordion';
-          const hdr=document.createElement('div');
-          hdr.className='sem-accordion-header';
-          hdr.innerHTML=`📅 ${ev.semLabel||'Semester'} ${ev.date?ev.date.getFullYear():''} — Dates TBD <span class="sem-chevron">▾</span>`;
-          hdr.addEventListener('click',()=>acc.classList.toggle('open'));
-          const body=document.createElement('div');
-          body.className='sem-accordion-body';
-          acc.appendChild(hdr); acc.appendChild(body);
-          upList.appendChild(acc);
-          semAccordions[semKey]={acc,body};
-          lastMonthKey=null;
-        }
-        semAccordions[semKey].body.appendChild(buildCard(ev,false));
-      } else {
-        let monthKey=ev.date?MONS[ev.date.getMonth()]+' '+ev.date.getFullYear():'Date TBD';
-        if(monthKey!==lastMonthKey){
-          lastMonthKey=monthKey;
-          const div=document.createElement('div');
-          div.className='month-divider';
-          div.textContent=monthKey;
-          upList.appendChild(div);
-        }
-        upList.appendChild(buildCard(ev,false));
-      }
-    });
+  if(!dated.length&&!Object.keys(semGroups).length){
+    board.innerHTML+='<div style="color:var(--text-muted);font-size:0.8rem;padding:2rem 0;text-transform:uppercase;letter-spacing:0.1em;font-weight:600">No upcoming dates in this category.</div>';
   }
 
-  pastList.innerHTML='';
-  if(past.length){ past.forEach(ev=>pastList.appendChild(buildCard(ev,true))); pastSection.style.display='block'; }
-  else{ pastSection.style.display='none'; }
+  // Past dates collapsible
+  if(past.length){
+    const toggle=document.createElement('div');
+    toggle.className='past-toggle';
+    toggle.innerHTML=`Past Dates (${past.length}) ▾`;
+    const pastGrid=document.createElement('div');
+    pastGrid.className='past-grid';
+    past.forEach(ev=>pastGrid.appendChild(buildCard(ev,col)));
+    toggle.addEventListener('click',()=>{toggle.classList.toggle('open-toggle');pastGrid.classList.toggle('open');});
+    board.appendChild(toggle);
+    board.appendChild(pastGrid);
+  }
 }
 
 // ── INIT ──
 async function init(){
   const loading=document.getElementById('loading');
   const errorMsg=document.getElementById('error-msg');
-  const container=document.getElementById('dates-container');
-  const sidebar=document.getElementById('filter-sidebar');
-  const filterBtns=document.getElementById('filter-buttons');
+  const app=document.getElementById('app');
+  const catTabs=document.getElementById('cat-tabs');
 
   try{
     const resp=await fetch(CSV_URL);
     if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const csv=await resp.text();
-    const rows=parseCSV(csv);
+    const rows=parseCSV(await resp.text());
 
     allEvents=[];
     rows.forEach(r=>{
-      // Only include rows where INCLUDE = Yes
-      const include=get(r,'Include','include','INCLUDE');
-      if(include.toLowerCase()!=='yes') return;
-
+      if(get(r,'Include','include','INCLUDE').toLowerCase()!=='yes') return;
       const event=get(r,'Event','event');
       if(!event) return;
-
       const dateEntries=parseDateField(get(r,'Date','date'));
       const semester=get(r,'Semester','semester');
-
       dateEntries.forEach(entry=>{
         allEvents.push({
-          date:       entry.date,
-          fuzzy:      entry.fuzzy,
-          semLabel:   entry.semLabel||semester||null,
+          date:entry.date, fuzzy:entry.fuzzy,
+          semLabel:entry.semLabel||semester||null,
           event,
-          time:       get(r,'Time','time'),
-          type1:      get(r,'Type1','type1'),
-          sub1:       get(r,'Sub1','sub1'),
-          type2:      get(r,'Type2','type2'),
-          sub2:       get(r,'Sub2','sub2'),
-          info:       get(r,'Info','info'),
-          link:       get(r,'Links','links','link'),
-          isRange:    entry.isRange,
-          rangeIndex: entry.rangeIndex,
-          rangeTotal: entry.rangeTotal,
+          time:      get(r,'Time','time'),
+          type1:     get(r,'Type1','type1'),
+          sub1:      get(r,'Sub1','sub1'),
+          type2:     get(r,'Type2','type2'),
+          sub2:      get(r,'Sub2','sub2'),
+          info:      get(r,'Info','info'),
+          link:      get(r,'Links','links','link'),
+          isRange:   entry.isRange,
+          rangeIndex:entry.rangeIndex,
+          rangeTotal:entry.rangeTotal,
+          isPeriod:  entry.isPeriod,
+          dateEnd:   entry.dateEnd,
         });
       });
     });
 
-    // Build filter accordion: type1 → subs
-    const typeMap=new Map();
+    // Collect type1s with counts
+    const typeCount=new Map();
     allEvents.forEach(ev=>{
-      [{t:ev.type1,s:ev.sub1},{t:ev.type2,s:ev.sub2}].forEach(({t,s})=>{
-        if(!t) return;
-        if(!typeMap.has(t)) typeMap.set(t,new Set());
-        if(s&&s.toLowerCase().trim()!==t.toLowerCase().trim()) typeMap.get(t).add(s);
+      [ev.type1,ev.type2].forEach(t=>{
+        if(t) typeCount.set(t,(typeCount.get(t)||0)+1);
       });
     });
 
-    Array.from(typeMap.keys()).sort().forEach(type1=>{
+    // Build category tabs
+    let firstType=null;
+    Array.from(typeCount.keys()).sort().forEach((type1,i)=>{
+      if(i===0) firstType=type1;
       const col=getColor(type1);
-      const subs=Array.from(typeMap.get(type1)).sort();
-      const group=document.createElement('div');
-      group.className='filter-group';
-
-      const parentBtn=document.createElement('button');
-      parentBtn.className='filter-group-btn';
-      parentBtn.style.cssText=`--btn-color:${col.dot}`;
-      parentBtn.innerHTML=`<span class="filter-dot" style="background:${col.dot}"></span>${type1}${subs.length?'<span class="filter-chevron">▾</span>':''}`;
-
-      parentBtn.addEventListener('click',()=>{
-        // Close all other groups
-        document.querySelectorAll('.filter-group').forEach(g=>{
-          if(g!==group){ g.classList.remove('expanded'); g.querySelector('.filter-group-btn').classList.remove('open'); }
+      const btn=document.createElement('button');
+      btn.className='cat-tab';
+      btn.dataset.type=type1;
+      btn.style.cssText=`--dot:${col.dot}`;
+      btn.innerHTML=`<span class="cat-dot" style="background:${col.dot}"></span>${type1}<span class="cat-count">${typeCount.get(type1)}</span>`;
+      btn.addEventListener('click',()=>{
+        document.querySelectorAll('.cat-tab').forEach(b=>{
+          b.classList.remove('active');
+          b.style.background=''; b.style.borderColor=''; b.style.color='';
         });
-        if(subs.length){
-          const isOpen=group.classList.contains('expanded');
-          group.classList.toggle('expanded');
-          parentBtn.classList.toggle('open');
-        }
-        setActiveFilter(type1,null,parentBtn);
-        // Style handled by setActiveFilter → clearActive
-        if(activeFilter&&activeFilter.type1===type1){
-          parentBtn.style.background=col.dot;
-          parentBtn.style.borderColor=col.dot;
-          parentBtn.style.color='white';
-        } else {
-          parentBtn.style.background='';
-          parentBtn.style.borderColor='';
-          parentBtn.style.color='';
-        }
+        btn.classList.add('active');
+        btn.style.background=col.dot;
+        btn.style.borderColor=col.dot;
+        activeType1=type1; activeSubFilter=null;
+        renderBoard(type1,null);
       });
-
-      group.appendChild(parentBtn);
-
-      if(subs.length){
-        const subList=document.createElement('div');
-        subList.className='filter-sub-list';
-        subs.forEach(sub=>{
-          const subBtn=document.createElement('button');
-          subBtn.className='filter-sub-btn';
-          subBtn.innerHTML=`<span class="filter-sub-dot" style="background:${col.dot}"></span>${sub}`;
-          subBtn.addEventListener('click',(e)=>{
-            e.stopPropagation();
-            group.classList.add('expanded');
-            parentBtn.classList.add('open');
-            setActiveFilter(type1,sub,subBtn);
-            subBtn.style.background=activeFilter&&activeFilter.sub1===sub?col.dot:'';
-            subBtn.style.color=activeFilter&&activeFilter.sub1===sub?'white':'';
-          });
-          subList.appendChild(subBtn);
-        });
-        group.appendChild(subList);
-      }
-
-      filterBtns.appendChild(group);
+      catTabs.appendChild(btn);
     });
+
+    // Show first category by default
+    if(firstType){
+      const first=catTabs.querySelector('.cat-tab');
+      const col=getColor(firstType);
+      first.classList.add('active');
+      first.style.background=col.dot;
+      first.style.borderColor=col.dot;
+      first.style.color='white';
+      renderBoard(firstType,null);
+    }
 
     loading.style.display='none';
-    container.style.display='block';
-    sidebar.style.display='block';
-    renderDates();
+    app.style.display='block';
 
   } catch(err){
     loading.style.display='none';
