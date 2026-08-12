@@ -871,6 +871,8 @@ async function init() {
     }
 
     allEventsList = events;
+    console.log('Event types found:', [...new Set(events.map(e=>e.type).filter(Boolean))]);
+    console.log('Sample event:', events[0]);
     document.getElementById('search-wrap').style.display = 'block';
     loading.style.display = 'none';
     container.style.display = 'block';
