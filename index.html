@@ -254,6 +254,7 @@
   .type-thompson      { background: var(--orange-light); color: var(--orange); border: 1px solid var(--orange-mid); }
   .type-service       { background: var(--gold-light);   color: #7b5a12;       border: 1px solid #f0d898; }
   .type-informational { background: var(--teal-light);   color: var(--teal);   border: 1px solid #b8d8dc; }
+  .type-campus        { background: var(--seafoam-light); color: #2a6b5f;      border: 1px solid #aad6ce; }
   .type-other    { background: var(--gold-light);    color: #7b5a12;       border: 1px solid #f0d898; }
 
 
@@ -630,6 +631,7 @@ function typeClass(type) {
   if (t.includes('service')) return 'type-service';
   if (t.includes('thompson')) return 'type-thompson';
   if (t.includes('information')) return 'type-informational';
+  if (t.includes('campus')) return 'type-campus';
   return 'type-other';
 }
 
