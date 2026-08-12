@@ -80,6 +80,117 @@
   .cat-count { font-size: 0.6rem; font-weight: 800; background: rgba(255,255,255,0.25); padding: 1px 6px; border-radius: 10px; }
   .cat-tab:not(.active) .cat-count { background: var(--tan); color: var(--text-muted); }
 
+  /* ── SEARCH BAR ── */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+
+  .search-input {
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 0.7rem 1rem 0.7rem 2.6rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .search-input:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(253,80,0,0.08);
+  }
+
+  .search-input::placeholder { color: var(--text-muted); }
+
+  .search-icon {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1rem;
+    display: none;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .search-clear:hover { color: var(--orange); }
+
+  /* Search results panel */
+  .search-results {
+    display: none;
+  }
+
+  .search-results.visible {
+    display: block;
+  }
+
+  .search-result-card {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    border-left: 4px solid var(--border);
+    padding: 0.85rem 1.1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .search-result-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  }
+
+  .search-result-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+  }
+
+  .search-result-meta {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+  }
+
+  .search-result-preview {
+    font-size: 0.75rem;
+    color: var(--text-mid);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  .search-no-results {
+    text-align: center;
+    padding: 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
   /* ── BULLETIN BOARD GRID ── */
   .board-area { display: none; }
   .board-area.visible { display: block; }
@@ -263,6 +374,13 @@
   <div id="loading">Loading dates…</div>
   <div id="error-msg"></div>
   <div id="app" style="display:none">
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" id="search-input" type="text" placeholder="Search dates, events, deadlines…">
+      <button class="search-clear" id="search-clear" onclick="clearSearch()">×</button>
+    </div>
+    <div class="search-results" id="search-results"></div>
+    <div id="main-content">
     <div class="cat-tabs" id="cat-tabs"></div>
     <div id="board-intro" style="display:none;padding:2rem 1.5rem;background:var(--white);border-radius:14px;border:1.5px solid var(--border);border-left:4px solid var(--orange);margin-bottom:0.5rem;">
   <p style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--orange);margin-bottom:0.5rem;">About This Page</p>
@@ -290,6 +408,7 @@ const TYPE_COLORS = {
   'semester dates':      { bg:'#e8f4f1', border:'#80baac', text:'#1c626d', dot:'#1c626d' },  // Seafoam
   'thompson':            { bg:'#fff3ee', border:'#fd5000', text:'#fd5000', dot:'#fd5000' },  // Orange
   'thompson leadership': { bg:'#fdf0ee', border:'#c04030', text:'#8a1010', dot:'#c04030' },  // Deep coral/red
+  'informational':       { bg:'#e8f4f1', border:'#1c626d', text:'#1c626d', dot:'#1c626d' },  // Teal
 };
 const DEFAULT_COLOR = { bg:'#eae1d8', border:'#ba9c80', text:'#4f2c1d', dot:'#ba9c80' };
 function getColor(t) { return t ? (TYPE_COLORS[t.toLowerCase().trim()]||DEFAULT_COLOR) : DEFAULT_COLOR; }
@@ -374,8 +493,10 @@ const iChev=`▾`;
 // ── BUILD CARD ──
 function buildCard(ev, col){
   const d=ev.date;
-  const isPast = d && d < new Date(new Date().setHours(0,0,0,0));
+  const today=new Date(); today.setHours(0,0,0,0);
+  const isPast = d && d < today;
   const hasBody = ev.info || ev.link;
+  const preview = ev.info ? (ev.info.length > 100 ? ev.info.slice(0,100).trim()+'…' : ev.info) : '';
 
   let monStr='–',dayStr='–',dowStr='',dayEndStr='';
   if(d){
@@ -421,6 +542,7 @@ function buildCard(ev, col){
     <div class="card-meta">
       ${timeChip}${sub1chip}${type2chip}${sub2chip}${fuzzyChip}${rangeChip}
     </div>
+    ${preview?`<div style="font-size:0.72rem;color:var(--text-muted);font-weight:500;line-height:1.5;margin-top:0.4rem;border-top:1px solid var(--tan);padding-top:0.4rem;">${preview}</div>`:''}
     ${hasBody?`<div class="card-body">${ev.info?`<p>${ev.info}</p>`:''}${linkBtn}</div>`:''}`;
 
   if(hasBody){
@@ -616,6 +738,89 @@ function renderBoard(type1, subFilter){
 
 
 // ── INIT ──
+// ── SEARCH ──
+function formatDateShort(ev){
+  if(!ev.date) return 'Date TBD';
+  if(ev.fuzzy==='month') return MON[ev.date.getMonth()]+' '+ev.date.getFullYear();
+  if(ev.fuzzy==='semester') return (ev.semLabel||'')+ ' '+ev.date.getFullYear();
+  const d=ev.date;
+  return DOW[d.getDay()]+', '+MON[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear();
+}
+
+function clearSearch(){
+  document.getElementById('search-input').value='';
+  document.getElementById('search-clear').style.display='none';
+  document.getElementById('search-results').classList.remove('visible');
+  document.getElementById('search-results').innerHTML='';
+  document.getElementById('main-content').style.display='block';
+}
+
+function runSearch(query){
+  const q=query.toLowerCase().trim();
+  const results=document.getElementById('search-results');
+  const mainContent=document.getElementById('main-content');
+  const clearBtn=document.getElementById('search-clear');
+
+  if(!q){
+    clearSearch();
+    return;
+  }
+
+  clearBtn.style.display='block';
+  mainContent.style.display='none';
+  results.classList.add('visible');
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  const matches=allEvents.filter(ev=>{
+    if(ev.fuzzy==='tbd') return false;
+    const searchStr=[ev.event,ev.info,ev.type1,ev.type2,ev.sub1,ev.sub2,ev.time].filter(Boolean).join(' ').toLowerCase();
+    return searchStr.includes(q);
+  }).sort((a,b)=>(!a.date?1:!b.date?-1:a.date-b.date));
+
+  if(!matches.length){
+    results.innerHTML='<div class="search-no-results">No results found for "'+query+'"</div>';
+    return;
+  }
+
+  results.innerHTML='';
+  matches.forEach(ev=>{
+    const col=getColor(ev.type1);
+    const card=document.createElement('div');
+    card.className='search-result-card';
+    card.style.borderLeftColor=col.dot;
+    const preview=ev.info?(ev.info.length>120?ev.info.slice(0,120).trim()+'…':ev.info):'';
+    const t1chip=ev.type1?`<span style="background:${col.bg};border:1px solid ${col.border};color:${col.text};padding:1px 7px;border-radius:12px;font-size:0.6rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">${ev.type1}</span>`:'';
+    const s1chip=ev.sub1&&ev.sub1!==ev.type1?`<span style="background:${col.bg};border:1px solid ${col.border};color:${col.text};padding:1px 7px;border-radius:12px;font-size:0.58rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;opacity:0.85;">${ev.sub1}</span>`:'';
+    card.innerHTML=`
+      <div class="search-result-title">${ev.event}</div>
+      <div class="search-result-meta">${formatDateShort(ev)}${ev.time?' · '+ev.time:''} &nbsp; ${t1chip} ${s1chip}</div>
+      ${preview?`<div class="search-result-preview">${preview}</div>`:''}
+    `;
+    // Click to navigate to that category
+    card.addEventListener('click',()=>{
+      clearSearch();
+      // Activate the right category tab
+      document.querySelectorAll('.cat-tab').forEach(btn=>{
+        if(btn.dataset.type===ev.type1){
+          btn.click();
+        }
+      });
+    });
+    results.appendChild(card);
+  });
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  const input=document.getElementById('search-input');
+  if(input){
+    let debounce;
+    input.addEventListener('input',()=>{
+      clearTimeout(debounce);
+      debounce=setTimeout(()=>runSearch(input.value),220);
+    });
+  }
+});
+
 async function init(){
   const loading=document.getElementById('loading');
   const errorMsg=document.getElementById('error-msg');
