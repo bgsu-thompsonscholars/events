@@ -517,16 +517,29 @@ const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
-  return lines.slice(1).map(line => {
-    const cols = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') { inQ = !inQ; }
-      else if (line[i] === ',' && !inQ) { cols.push(cur); cur = ''; }
-      else { cur += line[i]; }
+  // Robust parser handling multi-line quoted fields
+  const rows = [];
+  let cur = '', inQ = false, fields = [], i = 0;
+  while(i < text.length){
+    const c = text[i];
+    if(c === '"'){
+      if(inQ && text[i+1] === '"'){ cur += '"'; i++; }
+      else { inQ = !inQ; }
+    } else if(c === ',' && !inQ){
+      fields.push(cur); cur = '';
+    } else if((c === '\n' || (c === '\r' && text[i+1] === '\n')) && !inQ){
+      if(c === '\r') i++;
+      fields.push(cur); cur = '';
+      rows.push(fields); fields = [];
+    } else {
+      cur += c;
     }
-    cols.push(cur);
+    i++;
+  }
+  if(cur || fields.length){ fields.push(cur); rows.push(fields); }
+
+  const headers = rows[0].map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
+  return rows.slice(1).map(cols => {
     const obj = {};
     headers.forEach((h,i) => { obj[h] = (cols[i]||'').trim().replace(/^"|"$/g,''); });
     return obj;
