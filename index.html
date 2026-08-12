@@ -130,6 +130,18 @@
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
+    cursor: pointer;
+    padding: 0.3rem 0.5rem;
+    border-radius: 8px;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+  }
+
+  .legend-item:hover { background: var(--tan); }
+
+  .legend-item.active {
+    background: var(--tan);
+    border-color: var(--border);
   }
 
   .legend-desc {
@@ -138,6 +150,26 @@
     color: var(--text-muted);
     line-height: 1.3;
   }
+
+  .legend-clear {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 0.25rem 0.7rem;
+    cursor: pointer;
+    margin-left: auto;
+    transition: all 0.15s;
+    display: none;
+    white-space: nowrap;
+  }
+  .legend-clear:hover { color: var(--orange); border-color: var(--orange); }
+  .legend-clear.visible { display: inline-flex; }
   .search-result-card {
     background: var(--white); border: 1.5px solid var(--border);
     border-radius: 12px; border-left: 4px solid var(--border);
@@ -537,6 +569,7 @@
       <span class="type-badge type-informational">Informational</span>
       <span class="legend-desc">Does not fulfill Thompson Event requirement but provides helpful information</span>
     </div>
+    <button class="legend-clear" id="legend-clear" onclick="clearTypeFilter()">✕ Show All</button>
   </div>
   <div class="search-results" id="search-results"></div>
   <div id="events-container" style="display:none">
@@ -779,7 +812,31 @@ function buildCard(ev, isPast) {
 
 
 // ── SEARCH ──
-let allEventsList = []; // populated after fetch
+let allEventsList = [];
+let activeTypeFilter = null;
+
+function setTypeFilter(type, item) {
+  if (activeTypeFilter === type) {
+    // toggle off
+    activeTypeFilter = null;
+    document.querySelectorAll('.legend-item').forEach(i => i.classList.remove('active'));
+    document.getElementById('legend-clear').classList.remove('visible');
+  } else {
+    activeTypeFilter = type;
+    document.querySelectorAll('.legend-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('legend-clear').classList.add('visible');
+  }
+  // Re-render with filter
+  window._renderUpcoming && window._renderUpcoming();
+}
+
+function clearTypeFilter() {
+  activeTypeFilter = null;
+  document.querySelectorAll('.legend-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('legend-clear').classList.remove('visible');
+  window._renderUpcoming && window._renderUpcoming();
+}
 
 function clearSearch() {
   document.getElementById('search-input').value = '';
@@ -879,11 +936,15 @@ async function init() {
     const upcoming = events.filter(e => !e.date || e.date >= today).sort((a,b) => (!a.date?1:!b.date?-1:a.date-b.date));
     const past     = events.filter(e => e.date && e.date < today).sort((a,b) => b.date-a.date);
 
-    function renderUpcoming() {
+    window._renderUpcoming = function renderUpcoming() {
       upList.innerHTML = '';
+      // Apply type filter if active
+      const filtered = activeTypeFilter
+        ? upcoming.filter(ev => ev.type && ev.type.toLowerCase().includes(activeTypeFilter.toLowerCase()))
+        : upcoming;
       const s = currentPage * PER_PAGE;
-      const slice = upcoming.slice(s, s + PER_PAGE);
-      const totalPages = Math.ceil(upcoming.length / PER_PAGE);
+      const slice = filtered.slice(s, s + PER_PAGE);
+      const totalPages = Math.ceil(filtered.length / PER_PAGE);
       let lastMonth = null;
       slice.forEach(ev => {
         const m = ev.date ? ev.date.getMonth() : null;
@@ -914,14 +975,14 @@ async function init() {
 
     window.changePage = function(dir) {
       currentPage += dir;
-      renderUpcoming();
+      window._renderUpcoming();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     if (!upcoming.length) {
       upList.innerHTML = '<div class="no-events">No upcoming events scheduled.</div>';
     } else {
-      renderUpcoming();
+      window._renderUpcoming();
     }
 
     if (past.length) {
@@ -934,6 +995,16 @@ async function init() {
     console.log('Sample event:', events[0]);
     document.getElementById('search-wrap').style.display = 'block';
     document.getElementById('type-legend').style.display = 'flex';
+    // Wire up legend filter clicks
+    const legendDefs = [
+      { el: document.querySelectorAll('.legend-item')[0], type: 'Thompson' },
+      { el: document.querySelectorAll('.legend-item')[1], type: 'Service' },
+      { el: document.querySelectorAll('.legend-item')[2], type: 'Campus' },
+      { el: document.querySelectorAll('.legend-item')[3], type: 'Informational' },
+    ];
+    legendDefs.forEach(({el, type}) => {
+      if (el) el.addEventListener('click', () => setTypeFilter(type, el));
+    });
     loading.style.display = 'none';
     container.style.display = 'block';
 
