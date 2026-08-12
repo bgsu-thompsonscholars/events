@@ -87,6 +87,51 @@
     padding: 2.5rem 2rem 5rem;
   }
 
+  /* SEARCH */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 1.25rem;
+  }
+  .search-input {
+    width: 100%;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    padding: 0.7rem 2.8rem 0.7rem 2.6rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .search-input:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(253,80,0,0.08); }
+  .search-input::placeholder { color: var(--text-muted); }
+  .search-icon { position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+  .search-clear { position: absolute; right: 0.85rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 1.1rem; display: none; line-height: 1; padding: 0; }
+  .search-clear:hover { color: var(--orange); }
+  .search-results { display: none; }
+  .search-results.visible { display: block; }
+  .search-result-card {
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: 12px; border-left: 4px solid var(--border);
+    padding: 0.85rem 1.1rem; margin-bottom: 0.5rem;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .search-result-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+  .search-result-title { font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text); margin-bottom: 0.3rem; }
+  .search-result-meta { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; margin-bottom: 0.3rem; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+  .search-result-preview { font-size: 0.75rem; color: var(--text-mid); font-weight: 500; line-height: 1.5; margin-top: 0.25rem; }
+  .search-no-results { text-align: center; padding: 2rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+
+  /* CARD PREVIEW */
+  .card-preview {
+    font-size: 0.72rem; font-weight: 500; color: var(--text-muted);
+    line-height: 1.5; margin-top: 0.35rem;
+    padding-top: 0.35rem; border-top: 1px solid var(--tan);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
   .section-label {
     font-size: 0.6rem; font-weight: 800;
     letter-spacing: 0.2em; text-transform: uppercase;
@@ -206,8 +251,9 @@
     white-space: nowrap;
   }
 
-  .type-thompson { background: var(--orange-light); color: var(--orange); border: 1px solid var(--orange-mid); }
-  .type-service  { background: var(--gold-light);   color: #7b5a12;       border: 1px solid #f0d898; }
+  .type-thompson      { background: var(--orange-light); color: var(--orange); border: 1px solid var(--orange-mid); }
+  .type-service       { background: var(--gold-light);   color: #7b5a12;       border: 1px solid #f0d898; }
+  .type-informational { background: var(--teal-light);   color: var(--teal);   border: 1px solid #b8d8dc; }
   .type-other    { background: var(--gold-light);    color: #7b5a12;       border: 1px solid #f0d898; }
 
 
@@ -440,6 +486,12 @@
 <main>
   <div id="loading">Loading events…</div>
   <div id="error-msg" style="display:none"></div>
+  <div class="search-wrap" id="search-wrap" style="display:none">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input class="search-input" id="search-input" type="text" placeholder="Search events, locations, types…">
+    <button class="search-clear" id="search-clear" onclick="clearSearch()">×</button>
+  </div>
+  <div class="search-results" id="search-results"></div>
   <div id="events-container" style="display:none">
     <p class="section-label">Upcoming Events</p>
     <div id="upcoming-list" class="events-list"></div>
@@ -577,6 +629,7 @@ function typeClass(type) {
   const t = type.toLowerCase();
   if (t.includes('service')) return 'type-service';
   if (t.includes('thompson')) return 'type-thompson';
+  if (t.includes('information')) return 'type-informational';
   return 'type-other';
 }
 
@@ -648,6 +701,7 @@ function buildCard(ev, isPast) {
       ${ev.info
         ? `<p class="info-text">${ev.info}</p>`
         : `<p class="info-text" style="opacity:0.5;font-style:italic">No additional information provided.</p>`}
+      ${ev.info && !isThompson ? `<div class="card-preview">${ev.info.length > 100 ? ev.info.slice(0,100).trim()+'…' : ev.info}</div>` : ''}
       ${thompsonNote}
       ${actionSection}
       <p class="cal-label">Add to your calendar</p>
@@ -662,6 +716,75 @@ function buildCard(ev, isPast) {
   return card;
 }
 
+
+// ── SEARCH ──
+let allEventsList = []; // populated after fetch
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').style.display = 'none';
+  const results = document.getElementById('search-results');
+  results.classList.remove('visible');
+  results.innerHTML = '';
+  document.getElementById('events-container').style.display = 'block';
+}
+
+function runSearch(query) {
+  const q = query.toLowerCase().trim();
+  const results = document.getElementById('search-results');
+  const container = document.getElementById('events-container');
+  const clearBtn = document.getElementById('search-clear');
+
+  if (!q) { clearSearch(); return; }
+
+  clearBtn.style.display = 'block';
+  container.style.display = 'none';
+  results.classList.add('visible');
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const matches = allEventsList.filter(ev => {
+    const s = [ev.event, ev.info, ev.type, ev.loc, ev.time].filter(Boolean).join(' ').toLowerCase();
+    return s.includes(q);
+  }).sort((a,b) => (!a.date?1:!b.date?-1:a.date-b.date));
+
+  if (!matches.length) {
+    results.innerHTML = `<div class="search-no-results">No events found for "${query}"</div>`;
+    return;
+  }
+
+  results.innerHTML = '';
+  const MON_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const DOW_S = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  matches.forEach(ev => {
+    const card = document.createElement('div');
+    card.className = 'search-result-card';
+    const col = ev.type ? ev.type.split(',')[0].trim() : '';
+    const tClass = typeClass(col);
+    const dateStr = ev.date ? `${DOW_S[ev.date.getDay()]}, ${MON_S[ev.date.getMonth()]} ${ev.date.getDate()}` : 'Date TBD';
+    const preview = ev.info ? (ev.info.length > 120 ? ev.info.slice(0,120).trim()+'…' : ev.info) : '';
+    card.innerHTML = `
+      <div class="search-result-title">${ev.event}</div>
+      <div class="search-result-meta">
+        <span>${dateStr}${ev.time ? ' · '+ev.time : ''}</span>
+        ${ev.loc ? `<span>· ${ev.loc}</span>` : ''}
+        ${col ? `<span class="type-badge ${tClass}" style="font-size:0.55rem">${col}</span>` : ''}
+      </div>
+      ${preview ? `<div class="search-result-preview">${preview}</div>` : ''}
+    `;
+    results.appendChild(card);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.getElementById('search-input');
+  if (input) {
+    let debounce;
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => runSearch(input.value), 220);
+    });
+  }
+});
 
 async function init() {
   const loading     = document.getElementById('loading');
@@ -745,6 +868,8 @@ async function init() {
       pastSection.style.display = 'block';
     }
 
+    allEventsList = events;
+    document.getElementById('search-wrap').style.display = 'block';
     loading.style.display = 'none';
     container.style.display = 'block';
 
