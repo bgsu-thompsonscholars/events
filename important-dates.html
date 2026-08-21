@@ -745,6 +745,7 @@ function renderBoard(type1, subFilter){
     // semKey has format "Fall 2026__FALL_2026" — compare against the label part before __
     const semLabel = semKey.split('__')[0];
     const isCurrentSem = semLabel === currentSem;
+    console.log('semKey:', semKey, '| semLabel:', semLabel, '| currentSem:', currentSem, '| match:', isCurrentSem);
     let semOpen = isCurrentSem;
     semBody.style.cssText = `display:${isCurrentSem ? 'block' : 'none'};padding-top:0.85rem;`;
     semHdr.querySelector('.sem-chev-i').style.transform = isCurrentSem ? 'rotate(0deg)' : 'rotate(-90deg)';
