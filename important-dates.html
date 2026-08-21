@@ -736,14 +736,15 @@ function renderBoard(type1, subFilter){
     // Determine if this semester is current
     const now = new Date();
     const yr = now.getFullYear();
-    const mo = now.getMonth(); // 0-based
-    // Fall: Aug 23–Dec 31 (mo 7-11), Spring: Jan–May 1 (mo 0-4), Summer: May 2–Aug 22 (mo 4-7)
+    const mo = now.getMonth();
     let currentSem = '';
     if (mo >= 7) currentSem = `Fall ${yr}`;
     else if (mo <= 3 || (mo === 4 && now.getDate() <= 1)) currentSem = `Spring ${yr}`;
     else currentSem = `Summer ${yr}`;
 
-    const isCurrentSem = semKey === currentSem;
+    // semKey has format "Fall 2026__FALL_2026" — compare against the label part before __
+    const semLabel = semKey.split('__')[0];
+    const isCurrentSem = semLabel === currentSem;
     let semOpen = isCurrentSem;
     semBody.style.cssText = `display:${isCurrentSem ? 'block' : 'none'};padding-top:0.85rem;`;
     semHdr.querySelector('.sem-chev-i').style.transform = isCurrentSem ? 'rotate(0deg)' : 'rotate(-90deg)';
