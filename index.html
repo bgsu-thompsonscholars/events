@@ -662,7 +662,9 @@ function inlineMarkdown(text) {
   return text
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code style="background:var(--tan);padding:1px 4px;border-radius:3px;font-size:0.9em;">$1</code>');
+    .replace(/`(.+?)`/g, '<code style="background:var(--tan);padding:1px 4px;border-radius:3px;font-size:0.9em;">$1</code>')
+    .replace(/\{orange\}(.+?)\{\/orange\}/g, '<span style="color:#fd5000;font-weight:600;">$1</span>')
+    .replace(/\{teal\}(.+?)\{\/teal\}/g, '<span style="color:#3F6E6E;font-weight:600;">$1</span>');
 }
 
 function parseDate(raw) {
