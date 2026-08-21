@@ -632,6 +632,39 @@ function get(row, ...keys) {
 }
 
 // Handles both "Sunday, August 30, 2026" and "8/30/2026" etc.
+// ── MARKDOWN RENDERER ──
+// Supports: **bold**, *italic*, blank lines = paragraphs, - bullets
+function renderMarkdown(text) {
+  if (!text) return '';
+  // Normalize line endings
+  let t = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Split into paragraphs on blank lines
+  const blocks = t.split(/\n\s*\n/);
+  return blocks.map(block => {
+    const lines = block.trim().split('\n');
+    // Check if block is a bullet list
+    const isList = lines.every(l => l.trim().match(/^[-•*]\s/));
+    if (isList) {
+      const items = lines.map(l => {
+        let content = l.trim().replace(/^[-•*]\s+/, '');
+        content = inlineMarkdown(content);
+        return `<li>${content}</li>`;
+      }).join('');
+      return `<ul style="margin:0.4em 0 0.4em 1.2em;padding:0;">${items}</ul>`;
+    }
+    // Regular paragraph
+    const html = lines.map(l => inlineMarkdown(l.trim())).join('<br>');
+    return `<p style="margin:0 0 0.5em;">${html}</p>`;
+  }).join('');
+}
+
+function inlineMarkdown(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:var(--tan);padding:1px 4px;border-radius:3px;font-size:0.9em;">$1</code>');
+}
+
 function parseDate(raw) {
   if (!raw) return null;
   // Strip leading day-of-week if present: "Sunday, August 30, 2026" -> "August 30, 2026"
@@ -794,7 +827,7 @@ function buildCard(ev, isPast) {
     ${ev.info ? (()=>{ const clean=ev.info.replace(/\s+/g,' ').trim(); return `<div class="card-preview">${clean.length > 100 ? clean.slice(0,clean.lastIndexOf(' ',100)).trim()+'…' : clean}</div>`; })() : (ev.loc ? `<div class="card-preview" style="font-style:italic">📍 ${ev.loc}</div>` : '')}
     <div class="card-body">
       ${ev.info
-        ? `<p class="info-text">${ev.info}</p>`
+        ? `<div class="info-text">${renderMarkdown(ev.info)}</div>`
         : `<p class="info-text" style="opacity:0.5;font-style:italic">No additional information provided.</p>`}
       ${thompsonNote}
       ${actionSection}
