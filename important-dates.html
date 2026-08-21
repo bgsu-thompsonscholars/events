@@ -413,6 +413,30 @@ const TYPE_COLORS = {
 const DEFAULT_COLOR = { bg:'#eae1d8', border:'#ba9c80', text:'#4f2c1d', dot:'#ba9c80' };
 function getColor(t) { return t ? (TYPE_COLORS[t.toLowerCase().trim()]||DEFAULT_COLOR) : DEFAULT_COLOR; }
 
+// ── MARKDOWN RENDERER ──
+function renderMarkdown(text) {
+  if (!text) return '';
+  let t = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const blocks = t.split(/\n\s*\n/);
+  return blocks.map(block => {
+    const lines = block.trim().split('\n');
+    const isList = lines.every(l => l.trim().match(/^[-•*]\s/));
+    if (isList) {
+      const items = lines.map(l => `<li>${inlineMd(l.trim().replace(/^[-•*]\s+/, ''))}</li>`).join('');
+      return `<ul style="margin:0.4em 0 0.4em 1.2em;padding:0;">${items}</ul>`;
+    }
+    return `<p style="margin:0 0 0.5em;">${lines.map(l => inlineMd(l.trim())).join('<br>')}</p>`;
+  }).join('');
+}
+function inlineMd(t) {
+  return t
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code style="background:var(--tan);padding:1px 4px;border-radius:3px;font-size:0.9em;">$1</code>')
+    .replace(/\{orange\}(.+?)\{\/orange\}/g, '<span style="color:#fd5000;font-weight:600;">$1</span>')
+    .replace(/\{teal\}(.+?)\{\/teal\}/g, '<span style="color:#3F6E6E;font-weight:600;">$1</span>');
+}
+
 // ── CSV ──
 function parseCSV(text) {
   // Robust parser that handles multi-line quoted fields
@@ -543,7 +567,7 @@ function buildCard(ev, col){
       ${timeChip}${sub1chip}${type2chip}${sub2chip}${fuzzyChip}${rangeChip}
     </div>
     ${preview?`<div style="font-size:0.72rem;color:var(--text-muted);font-weight:500;line-height:1.5;margin-top:0.4rem;border-top:1px solid var(--tan);padding-top:0.4rem;">${preview}</div>`:''}
-    ${hasBody?`<div class="card-body">${ev.info?`<p>${ev.info}</p>`:''}${linkBtn}</div>`:''}`;
+    ${hasBody?`<div class="card-body">${ev.info?`<div class="date-info-text">${renderMarkdown(ev.info)}</div>`:''}${linkBtn}</div>`:''}`;
 
   if(hasBody){
     card.addEventListener('click', ()=>card.classList.toggle('open'));
@@ -669,7 +693,6 @@ function renderBoard(type1, subFilter){
     `;
 
     const semBody=document.createElement('div');
-    semBody.style.cssText='display:none;padding-top:0.85rem;';
 
     // Sub-group within this semester
     const subOrder2=[], subMap2=new Map();
@@ -710,7 +733,20 @@ function renderBoard(type1, subFilter){
     });
 
     // Toggle semester — closed by default
-    let semOpen=false;
+    // Determine if this semester is current
+    const now = new Date();
+    const yr = now.getFullYear();
+    const mo = now.getMonth(); // 0-based
+    // Fall: Aug 23–Dec 31 (mo 7-11), Spring: Jan–May 1 (mo 0-4), Summer: May 2–Aug 22 (mo 4-7)
+    let currentSem = '';
+    if (mo >= 7) currentSem = `Fall ${yr}`;
+    else if (mo <= 3 || (mo === 4 && now.getDate() <= 1)) currentSem = `Spring ${yr}`;
+    else currentSem = `Summer ${yr}`;
+
+    const isCurrentSem = semKey === currentSem;
+    let semOpen = isCurrentSem;
+    semBody.style.cssText = `display:${isCurrentSem ? 'block' : 'none'};padding-top:0.85rem;`;
+    semHdr.querySelector('.sem-chev-i').style.transform = isCurrentSem ? 'rotate(0deg)' : 'rotate(-90deg)';
     semHdr.addEventListener('click',()=>{
       semOpen=!semOpen;
       semBody.style.display=semOpen?'block':'none';
@@ -788,7 +824,7 @@ function runSearch(query){
     const card=document.createElement('div');
     card.className='search-result-card';
     card.style.borderLeftColor=col.dot;
-    const preview=ev.info?(ev.info.length>120?ev.info.slice(0,120).trim()+'…':ev.info):'';
+    const preview=ev.info?(ev.info.replace(/\s+/g,' ').trim().length>120?ev.info.replace(/\s+/g,' ').trim().slice(0,120)+'…':ev.info.replace(/\s+/g,' ').trim()):'';
     const t1chip=ev.type1?`<span style="background:${col.bg};border:1px solid ${col.border};color:${col.text};padding:1px 7px;border-radius:12px;font-size:0.6rem;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;">${ev.type1}</span>`:'';
     const s1chip=ev.sub1&&ev.sub1!==ev.type1?`<span style="background:${col.bg};border:1px solid ${col.border};color:${col.text};padding:1px 7px;border-radius:12px;font-size:0.58rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;opacity:0.85;">${ev.sub1}</span>`:'';
     card.innerHTML=`
