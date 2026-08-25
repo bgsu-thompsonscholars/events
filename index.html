@@ -113,25 +113,34 @@
   .search-results { display: none; }
   .search-results.visible { display: block; }
 
-  /* TYPE LEGEND */
+  /* TYPE LEGEND — vertical side panel */
   .type-legend {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem 1.5rem;
-    margin-bottom: 1.25rem;
-    padding: 0.85rem 1.1rem;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 1rem 1.1rem;
     background: var(--white);
     border: 1.5px solid var(--border);
-    border-radius: 10px;
+    border-radius: 14px;
+    width: 220px;
+    flex-shrink: 0;
+  }
+
+  .legend-title {
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
   }
 
   .legend-item {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    min-width: 0;
+    flex-direction: column;
+    gap: 0.2rem;
     cursor: pointer;
-    padding: 0.3rem 0.5rem;
+    padding: 0.5rem 0.6rem;
     border-radius: 8px;
     border: 1.5px solid transparent;
     transition: all 0.15s;
@@ -145,7 +154,7 @@
   }
 
   .legend-desc {
-    font-size: 0.68rem;
+    font-size: 0.65rem;
     font-weight: 500;
     color: var(--text-muted);
     line-height: 1.3;
@@ -163,13 +172,18 @@
     border-radius: 20px;
     padding: 0.25rem 0.7rem;
     cursor: pointer;
-    margin-left: auto;
+    margin-top: auto;
     transition: all 0.15s;
     display: none;
-    white-space: nowrap;
+    align-self: flex-start;
   }
   .legend-clear:hover { color: var(--orange); border-color: var(--orange); }
   .legend-clear.visible { display: inline-flex; }
+
+  @media (max-width: 640px) {
+    .cal-legend-wrap { flex-direction: column; }
+    .type-legend { width: 100%; }
+  }
   .search-result-card {
     background: var(--white); border: 1.5px solid var(--border);
     border-radius: 12px; border-left: 4px solid var(--border);
@@ -192,14 +206,21 @@
     border-top: 1px solid var(--tan);
   }
 
-  /* ── CALENDAR ── */
+  /* ── CALENDAR + LEGEND SIDE BY SIDE ── */
+  .cal-legend-wrap {
+    display: flex;
+    gap: 1.25rem;
+    margin-bottom: 1.25rem;
+    align-items: stretch;
+  }
+
   .calendar-wrap {
     background: var(--white);
     border: 1.5px solid var(--border);
     border-radius: 14px;
     padding: 1rem 1.1rem 0.85rem;
-    margin-bottom: 1.25rem;
-    display: none;
+    flex: 1;
+    min-width: 0;
   }
 
   .calendar-nav {
@@ -681,38 +702,44 @@
 <main>
   <div id="loading">Loading events…</div>
   <div id="error-msg" style="display:none"></div>
-  <div class="calendar-wrap" id="calendar-wrap">
-    <div class="calendar-nav">
-      <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
-      <span class="cal-month-label" id="cal-month-label"></span>
-      <button class="cal-nav-btn" onclick="calNav(1)">›</button>
+  <div class="cal-legend-wrap" id="cal-legend-wrap" style="display:none">
+    <!-- LEFT: Calendar -->
+    <div class="calendar-wrap" id="calendar-wrap">
+      <div class="calendar-nav">
+        <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
+        <span class="cal-month-label" id="cal-month-label"></span>
+        <button class="cal-nav-btn" onclick="calNav(1)">›</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
     </div>
-    <div class="cal-grid" id="cal-grid"></div>
+    <!-- RIGHT: Legend / filter -->
+    <div class="type-legend" id="type-legend">
+      <p class="legend-title">Event Types</p>
+      <div class="legend-item" data-type="Thompson">
+        <span class="type-badge type-thompson">Thompson Event</span>
+        <span class="legend-desc">Counts toward your event attendance requirement</span>
+      </div>
+      <div class="legend-item" data-type="Service">
+        <span class="type-badge type-service">Service</span>
+        <span class="legend-desc">Earn service hours</span>
+      </div>
+      <div class="legend-item" data-type="Campus">
+        <span class="type-badge type-campus">Campus Event</span>
+        <span class="legend-desc">Large-scale campus events we encourage you to attend</span>
+      </div>
+      <div class="legend-item" data-type="Informational">
+        <span class="type-badge type-informational">Informational</span>
+        <span class="legend-desc">Does not fulfill Thompson Event requirement but provides helpful information</span>
+      </div>
+      <button class="legend-clear" id="legend-clear" onclick="clearTypeFilter()">✕ Show All</button>
+    </div>
   </div>
   <div class="search-wrap" id="search-wrap" style="display:none">
     <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input class="search-input" id="search-input" type="text" placeholder="Search events, locations, types…">
     <button class="search-clear" id="search-clear" onclick="clearSearch()">×</button>
   </div>
-  <div class="type-legend" id="type-legend" style="display:none">
-    <div class="legend-item">
-      <span class="type-badge type-thompson">Thompson Event</span>
-      <span class="legend-desc">Counts toward your event attendance requirement</span>
-    </div>
-    <div class="legend-item">
-      <span class="type-badge type-service">Service</span>
-      <span class="legend-desc">Earn service hours</span>
-    </div>
-    <div class="legend-item">
-      <span class="type-badge type-campus">Campus Event</span>
-      <span class="legend-desc">Large-scale campus events we encourage you to attend</span>
-    </div>
-    <div class="legend-item">
-      <span class="type-badge type-informational">Informational</span>
-      <span class="legend-desc">Does not fulfill Thompson Event requirement but provides helpful information</span>
-    </div>
-    <button class="legend-clear" id="legend-clear" onclick="clearTypeFilter()">✕ Show All</button>
-  </div>
+
   <div class="search-results" id="search-results"></div>
   <div id="events-container" style="display:none">
     <p class="section-label">Upcoming Events</p>
@@ -1326,22 +1353,16 @@ async function init() {
     console.log('Event types found:', [...new Set(events.map(e=>e.type).filter(Boolean))]);
     console.log('Sample event:', events[0]);
     document.getElementById('search-wrap').style.display = 'block';
-    document.getElementById('type-legend').style.display = 'flex';
-    document.getElementById('calendar-wrap').style.display = 'block';
+    document.getElementById('cal-legend-wrap').style.display = 'flex';
     const now = new Date();
     calYear = now.getFullYear();
     calMonth = now.getMonth();
     renderCalendar();
     // Wire up legend filter clicks
-    const legendDefs = [
-      { el: document.querySelectorAll('.legend-item')[0], type: 'Thompson' },
-      { el: document.querySelectorAll('.legend-item')[1], type: 'Service' },
-      { el: document.querySelectorAll('.legend-item')[2], type: 'Campus' },
-      { el: document.querySelectorAll('.legend-item')[3], type: 'Informational' },
-    ];
-    legendDefs.forEach(({el, type}) => {
-      if (el) el.addEventListener('click', () => setTypeFilter(type, el));
+    document.querySelectorAll('.legend-item').forEach(el => {
+      el.addEventListener('click', () => setTypeFilter(el.dataset.type, el));
     });
+
     loading.style.display = 'none';
     container.style.display = 'block';
 
