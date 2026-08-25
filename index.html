@@ -192,6 +192,52 @@
     border-top: 1px solid var(--tan);
   }
 
+  /* THIS WEEK DIVIDER */
+  .this-week-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 0.75rem;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--orange);
+  }
+
+  .this-week-divider::after {
+    content: '';
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(to right, var(--orange), transparent);
+    border-radius: 2px;
+  }
+
+  /* RSVP STRIP */
+  .rsvp-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.45rem 1.2rem;
+    background: var(--orange-light);
+    border-top: 1px solid var(--orange-mid);
+    flex-wrap: wrap;
+  }
+
+  .rsvp-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--orange);
+    flex: 1;
+  }
+
+  .rsvp-btn {
+    font-size: 0.65rem !important;
+    padding: 0.3rem 0.8rem !important;
+    border-radius: 6px !important;
+  }
+
   .section-label {
     font-size: 0.6rem; font-weight: 800;
     letter-spacing: 0.2em; text-transform: uppercase;
@@ -235,24 +281,6 @@
   .event-card.open {
     border-color: var(--orange);
     border-left-width: 4px;
-  }
-
-  .event-card.this-week {
-    box-shadow: 0 0 0 2.5px var(--orange);
-  }
-
-  .this-week-badge {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.58rem;
-    font-weight: 800;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    background: var(--orange);
-    color: white;
-    padding: 2px 8px;
-    border-radius: 20px;
-    margin-bottom: 0.4rem;
   }
 
   .card-header {
@@ -767,9 +795,8 @@ function buildCard(ev, isPast) {
   const zoom = isZoom(ev.loc);
   const today = new Date(); today.setHours(0,0,0,0);
   const weekEnd = new Date(today); weekEnd.setDate(today.getDate()+7);
-  const isThisWeek = d && !isPast && d >= today && d <= weekEnd;
   const card = document.createElement('div');
-  card.className = 'event-card' + (isPast ? ' past' : '') + (isThisWeek ? ' this-week' : '');
+  card.className = 'event-card' + (isPast ? ' past' : '');
 
   // Type badges
   const typeBadges = ev.type
@@ -806,8 +833,21 @@ function buildCard(ev, isPast) {
     ? `<p class="thompson-note">This event counts toward event attendance requirements for both the 2026 and A2026 cohorts. Please be sure to sign in using the QR code at the event so your attendance is properly recorded.</p>`
     : '';
 
+  // RSVP strip — visible without clicking
+  const rsvpStrip = ev.signup
+    ? (() => {
+        const isZoomLink = /zoom\.us|meeting\.zoom/i.test(ev.signup);
+        const label = isZoomLink ? '🎥 Zoom Link Available' : '📋 Sign Up Required';
+        const btnLabel = isZoomLink ? `${iconVideo} Join Zoom` : `${iconLink} Sign Up`;
+        const btnClass = isZoomLink ? 'btn btn-zoom' : 'btn btn-signup';
+        return `<div class="rsvp-strip">
+          <span class="rsvp-badge">${label}</span>
+          <a class="${btnClass} rsvp-btn" href="${ev.signup}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${btnLabel}</a>
+        </div>`;
+      })()
+    : '';
+
   card.innerHTML = `
-    ${isThisWeek ? `<div style="padding:0.5rem 1.2rem 0"><span class="this-week-badge">🗓 This Week</span></div>` : ''}
     <div class="card-header">
       <div class="date-badge">
         <div class="mon">${d ? MON[d.getMonth()] : '—'}</div>
@@ -826,6 +866,7 @@ function buildCard(ev, isPast) {
       </div>
       <svg class="chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
     </div>
+    ${rsvpStrip}
     ${ev.info ? (()=>{ const clean=ev.info.replace(/\s+/g,' ').trim(); return `<div class="card-preview">${clean.length > 100 ? clean.slice(0,clean.lastIndexOf(' ',100)).trim()+'…' : clean}</div>`; })() : (ev.loc ? `<div class="card-preview" style="font-style:italic">📍 ${ev.loc}</div>` : '')}
     <div class="card-body">
       ${ev.info
@@ -977,9 +1018,37 @@ async function init() {
       const filtered = activeTypeFilter
         ? upcoming.filter(ev => ev.type && ev.type.toLowerCase().includes(activeTypeFilter.toLowerCase()))
         : upcoming;
+
+      // Calculate Mon–Sun of current week
+      const now = new Date(); now.setHours(0,0,0,0);
+      const dayOfWeek = now.getDay(); // 0=Sun
+      const monday = new Date(now); monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+      const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+
+      // Split this-week vs rest
+      const thisWeek = filtered.filter(ev => ev.date && ev.date >= monday && ev.date <= sunday);
+      const rest     = filtered.filter(ev => !ev.date || ev.date < monday || ev.date > sunday);
+
+      // If there are this-week events, show them first with a divider
+      if (thisWeek.length) {
+        const monStr = MON[monday.getMonth()] + ' ' + monday.getDate();
+        const sunStr = MON[sunday.getMonth()] + ' ' + sunday.getDate();
+        const twDiv = document.createElement('div');
+        twDiv.className = 'this-week-divider';
+        twDiv.textContent = `This Week — ${monStr}–${sunStr}`;
+        upList.appendChild(twDiv);
+        thisWeek.forEach(ev => upList.appendChild(buildCard(ev, false)));
+        // Spacer before rest
+        if (rest.length) {
+          const spacer = document.createElement('div');
+          spacer.style.marginTop = '1.25rem';
+          upList.appendChild(spacer);
+        }
+      }
+
       const s = currentPage * PER_PAGE;
-      const slice = filtered.slice(s, s + PER_PAGE);
-      const totalPages = Math.ceil(filtered.length / PER_PAGE);
+      const slice = rest.slice(s, s + PER_PAGE);
+      const totalPages = Math.ceil(rest.length / PER_PAGE);
       let lastMonth = null;
       slice.forEach(ev => {
         const m = ev.date ? ev.date.getMonth() : null;
