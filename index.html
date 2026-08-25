@@ -192,6 +192,112 @@
     border-top: 1px solid var(--tan);
   }
 
+  /* ── CALENDAR ── */
+  .calendar-wrap {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem 1.1rem 0.85rem;
+    margin-bottom: 1.25rem;
+    display: none;
+  }
+
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+  }
+
+  .cal-nav-btn {
+    background: none;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    width: 30px; height: 30px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-mid);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .cal-nav-btn:hover { border-color: var(--orange); color: var(--orange); }
+
+  .cal-month-label {
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-mid);
+  }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .cal-dow {
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: center;
+    padding-bottom: 4px;
+  }
+
+  .cal-cell {
+    min-height: 36px;
+    border-radius: 7px;
+    padding: 3px 2px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: default;
+    transition: background 0.12s;
+    position: relative;
+  }
+
+  .cal-cell.has-event {
+    cursor: pointer;
+  }
+
+  .cal-cell.has-event:hover { background: var(--orange-light); }
+
+  .cal-cell.today .cal-day {
+    background: var(--orange);
+    color: white;
+    border-radius: 50%;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .cal-day {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    line-height: 1;
+    margin-bottom: 2px;
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .cal-cell.other-month .cal-day { color: var(--text-muted); opacity: 0.4; }
+
+  .cal-dots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+    max-width: 28px;
+  }
+
+  .cal-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
   /* THIS WEEK DIVIDER */
   .this-week-divider {
     display: flex;
@@ -575,6 +681,14 @@
 <main>
   <div id="loading">Loading events…</div>
   <div id="error-msg" style="display:none"></div>
+  <div class="calendar-wrap" id="calendar-wrap">
+    <div class="calendar-nav">
+      <button class="cal-nav-btn" onclick="calNav(-1)">‹</button>
+      <span class="cal-month-label" id="cal-month-label"></span>
+      <button class="cal-nav-btn" onclick="calNav(1)">›</button>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
   <div class="search-wrap" id="search-wrap" style="display:none">
     <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <input class="search-input" id="search-input" type="text" placeholder="Search events, locations, types…">
@@ -797,6 +911,10 @@ function buildCard(ev, isPast) {
   const weekEnd = new Date(today); weekEnd.setDate(today.getDate()+7);
   const card = document.createElement('div');
   card.className = 'event-card' + (isPast ? ' past' : '');
+  if (ev.date) {
+    const dk = ev.date.getFullYear()+'-'+String(ev.date.getMonth()+1).padStart(2,'0')+'-'+String(ev.date.getDate()).padStart(2,'0');
+    card.dataset.dateKey = dk;
+  }
 
   // Type badges
   const typeBadges = ev.type
@@ -886,6 +1004,116 @@ function buildCard(ev, isPast) {
   return card;
 }
 
+
+// ── CALENDAR ──
+const CAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CAL_DOWS   = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+let calYear, calMonth;
+
+function getEventDotColor(type) {
+  if (!type) return '#9a7c6e';
+  const t = type.toLowerCase();
+  if (t.includes('service'))     return '#c8900a';
+  if (t.includes('campus'))      return '#80baac';
+  if (t.includes('information')) return '#1c626d';
+  if (t.includes('thompson'))    return '#fd5000';
+  return '#9a7c6e';
+}
+
+function renderCalendar() {
+  const grid    = document.getElementById('cal-grid');
+  const label   = document.getElementById('cal-month-label');
+  if (!grid) return;
+
+  label.textContent = CAL_MONTHS[calMonth] + ' ' + calYear;
+  grid.innerHTML = '';
+
+  // Day-of-week headers (Mon–Sun)
+  CAL_DOWS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  // First day of month — adjust so week starts Monday
+  const firstDay = new Date(calYear, calMonth, 1);
+  const startDow = (firstDay.getDay() + 6) % 7; // 0=Mon
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevDays = new Date(calYear, calMonth, 0).getDate();
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  // Build date→events map
+  const eventMap = {};
+  allEventsList.forEach(ev => {
+    if (!ev.date) return;
+    const key = ev.date.getFullYear() + '-' + ev.date.getMonth() + '-' + ev.date.getDate();
+    if (!eventMap[key]) eventMap[key] = [];
+    eventMap[key].push(ev);
+  });
+
+  // Prev month trailing days
+  for (let i = 0; i < startDow; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell other-month';
+    cell.innerHTML = `<div class="cal-day">${prevDays - startDow + 1 + i}</div>`;
+    grid.appendChild(cell);
+  }
+
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement('div');
+    const isToday = calYear === today.getFullYear() && calMonth === today.getMonth() && d === today.getDate();
+    const key = calYear + '-' + calMonth + '-' + d;
+    const evs = eventMap[key] || [];
+    cell.className = 'cal-cell' + (isToday ? ' today' : '') + (evs.length ? ' has-event' : '');
+
+    // Dots — up to 4, colored by type
+    const dots = evs.slice(0,4).map(ev => {
+      const types = (ev.type || '').split(',');
+      const color = getEventDotColor(types[0].trim());
+      return `<span class="cal-dot" style="background:${color}" title="${ev.event}"></span>`;
+    }).join('');
+
+    cell.innerHTML = `<div class="cal-day">${d}</div>${dots ? `<div class="cal-dots">${dots}</div>` : ''}`;
+
+    if (evs.length) {
+      cell.addEventListener('click', () => {
+        // Scroll to the first event on this date
+        const dateStr = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+        // Find card with matching date
+        const cards = document.querySelectorAll('.event-card');
+        for (const card of cards) {
+          if (card.dataset.dateKey === dateStr) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('open');
+            setTimeout(() => card.style.boxShadow = '0 0 0 2.5px var(--orange)', 100);
+            setTimeout(() => card.style.boxShadow = '', 1800);
+            break;
+          }
+        }
+      });
+    }
+    grid.appendChild(cell);
+  }
+
+  // Next month fill
+  const totalCells = startDow + daysInMonth;
+  const remaining = (7 - (totalCells % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell other-month';
+    cell.innerHTML = `<div class="cal-day">${i}</div>`;
+    grid.appendChild(cell);
+  }
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendar();
+}
 
 // ── SEARCH ──
 let allEventsList = [];
@@ -1099,6 +1327,11 @@ async function init() {
     console.log('Sample event:', events[0]);
     document.getElementById('search-wrap').style.display = 'block';
     document.getElementById('type-legend').style.display = 'flex';
+    document.getElementById('calendar-wrap').style.display = 'block';
+    const now = new Date();
+    calYear = now.getFullYear();
+    calMonth = now.getMonth();
+    renderCalendar();
     // Wire up legend filter clicks
     const legendDefs = [
       { el: document.querySelectorAll('.legend-item')[0], type: 'Thompson' },
