@@ -829,6 +829,7 @@ function renderMarkdown(text) {
 
 function inlineMarkdown(text) {
   return text
+    .replace(/\[(.+?)\]\((https?:\/\/[^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--orange);font-weight:600;text-decoration:underline;">$1</a>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code style="background:var(--tan);padding:1px 4px;border-radius:3px;font-size:0.9em;">$1</code>')
